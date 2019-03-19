@@ -41,3 +41,88 @@ cache, lock files (linked to /run/lock)
 
 ##### /run
 Pseudo-fs. For transient data that contains runtime information as lock files
+
+
+### Chapter III Processes
+
+`orphan`: A process whose process has terminated. Its PPID is set to 1 that is, it's adopted by `init`.
+
+`zombie`: A child process terminates without its parent gets notified of this. It still has an entry in the process table. 
+
+`wait` system call can be made by a process after forking a child process. Parent suspends execution and wait child process to complete and gets notified of its exit status.
+
+PID is 16 bit integer located in /proc/sys/kernel/pid_max and can be altered.
+
+##### Limits
+`ulimit` gets/sets limits of the calling process. Limits on resources such as as max cpu time, max file locks, max open files, max threads, stack size, memory size, file size etc.
+
+##### Permissions
+A process can inherit permissions from 
+    * executor - the user who executes it
+    * executable - executable binary file, `setuid` bit set.
+
+##### Execution modes
+At any given time, a process is running in a certain execution mode.
+    * user mode: usually when executing application code
+    * kernel mode: when executing system calls to access hardware resources memory, disk, peripherals.
+
+##### fork and exec
+
+$ ls
+bash process forks itself and a new copy, i.e. child process is created. fork() returns child's PID to parent. bash process goes into sleep state with `wait` system call on its child.
+copy process makes `exec` system call and loads `ls` code in the child process space and executes it.
+when execution completed, child process terminates via exit system call and returns exit code to kernel.
+bash receives exit status either via polling or SIGCHLD signal handler from kernel, removes child's entry from process table (i.e. reaped) and it resumes execution.
+
+D    uninterruptible sleep (usually IO)
+R    running or runnable (on run queue)
+S    interruptible sleep (waiting for an event to complete)
+T    stopped by job control signal (Ctrl+Z)
+t    stopped by debugger during the tracing
+X    dead (should never be seen)
+Z    defunct ("zombie") process, terminated but not reaped by its parent
+
+Kernel-created processes can run in
+    * kernel space for maintenance work
+    * user space - usually short lived
+
+Their parent is kthreadd[2] and names are in encapsulated brackets.
+
+##### Process priority
+`nice` executes a command with adjusted niceness. The lower the niceness, the higher is the process priority.
+$ nice -n +3 command args # increase niceness by 3, lowers priority by 3
+`renice` to prioritize an existing process
+$ renice -n -5 <pid>
+
+##### Library types
+static: An application compiled with a static library doesn't change thereafter even if static library is updated. .
+
+shared: Such libraries can be loaded into application at runtime - also called dynamic link libraries (DLL). I think it can be though as an external dependency that is satisfied from the environment and during application build time. Shared libraries have \*.so extension.
+
+`ldd` list shared dependencies of an executable.
+
+### Chapter IV Signals
+
+A way of communication with a process (basic IPC)
+It can originate from:
+   * _user_: via `kill` command
+   * _a process_: must be via system call through kernel
+   * _kernel_: e.g. a process makes an illegal memory reference
+
+`kill` is the command to send signals to a process.
+
+Signal handlers can be implemented in the program code or it can response according to the system defaults.
+
+Signal | Default action | Description
+--- | --- | ---
+SIGHUP | Terminate | convention: for daemons, it reloads configuration file.
+SIGINT | Terminate | interrupt from keyboard?
+SIGKILL | Terminate | abnormal termination
+SIGTERM | Terminate | (default in `kill`) graceful termination
+SIGSTOP | Stop | Ctrl-Z
+SIGCONT | Continue if stopped |
+
+`killall` sends signals to process(es) by name or user given.
+`pkill` sends signals to processes by filtering by name or user.
+`pgrep` is synopsis. Filters by name, owner, parent, time.
+pgrep -u root java  # list java processes owned by root
