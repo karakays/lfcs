@@ -130,3 +130,19 @@ SIGPIPE | Terminate | Broken pipe; socket closed
 `pkill` sends signals to processes by filtering by name or user.
 `pgrep` is synopsis. Filters by name, owner, parent, time.
 pgrep -u root java  # list java processes owned by root
+
+
+### Chapter V. Package managers
+In general, two families of package managers can be considered.
+
+a. rpm... RedHat Package Management
+rpm is low-level package manager.
+Higher-level PMs based on it and manage dependencies.
+yum: in RedHat
+DNF: in Fedora
+zypper: in SUSE
+
+b. APT... advanced packaging tool
+dpkg is low-level package manager.
+apt-cache and apt-get is high-level PMs.
+
