@@ -97,7 +97,7 @@ $ renice -n -5 <pid>
 ##### Library types
 static: An application compiled with a static library doesn't change thereafter even if static library is updated. .
 
-shared: Such libraries can be loaded into application at runtime - also called dynamic link libraries (DLL). I think it can be though as an external dependency that is satisfied from the environment and during application build time. Shared libraries have \*.so extension.
+shared: Such libraries can be loaded into application at runtime - also called dynamic link libraries (DLL). I think it can be thought as an external dependency that is satisfied from the environment and not during application build time. Shared libraries have \*.so extension.
 
 `ldd` list shared dependencies of an executable.
 
@@ -116,11 +116,15 @@ Signal handlers can be implemented in the program code or it can response accord
 Signal | Default action | Description
 --- | --- | ---
 SIGHUP | Terminate | convention: for daemons, it reloads configuration file.
-SIGINT | Terminate | interrupt from keyboard?
-SIGKILL | Terminate | abnormal termination
-SIGTERM | Terminate | (default in `kill`) graceful termination
-SIGSTOP | Stop | Ctrl-Z
-SIGCONT | Continue if stopped |
+SIGINT | Terminate | interrupt from keyboard Ctrl-C
+SIGFPE  | Core dump | sent from kernel to a process that attempts to divide by 0
+SIGKILL | Terminate | abnormal termination (cannot be handled nor ignored)
+SIGTERM | Terminate | graceful termination (default in `kill`) 
+SIGSTOP | Stop | Cannot be handled nor ignored
+SIGTSTP | Stop | Ctrl-Z
+SIGCONT | Continue | Resume 
+SIGCHLD | Ignore | Child stopped/terminated 
+SIGPIPE | Terminate | Broken pipe; socket closed
 
 `killall` sends signals to process(es) by name or user given.
 `pkill` sends signals to processes by filtering by name or user.
