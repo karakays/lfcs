@@ -1,4 +1,3 @@
-
 ### Chapter II Filesystem layout
 
 FHS… initiative to standardise filesystem organization in distributions
@@ -36,8 +35,7 @@ Pseudo-fs. for processes to keep internal state. Each process has its place as a
 Home of root user
 
 ##### /var
-For variable and volatile data that changes frequently. Logs, spool directories (for mail and cron), transient data for
-cache, lock files (linked to /run/lock)
+For variable and volatile data that changes frequently. Logs, spool directories (for mail and cron), transient data for cache (e.g. packages) , lock files (linked to /run/lock)
 
 ##### /run
 Pseudo-fs. For transient data that contains runtime information as lock files
@@ -136,13 +134,49 @@ pgrep -u root java  # list java processes owned by root
 In general, two families of package managers can be considered.
 
 1. rpm... RedHat Package Manager
-2. APT... Advanced Packaging Tool
+2. dpkg... Debian Package Manager
 
 Packaging systems can be classified in two levels:
 1. low-level: Low-level PMs deal with installation/removal only. They don't carry out dependency management. If a package is missing a dependency during installation, it will fail. Similarly, if a removal depends on some other package, it will also fail. 
 * rpm in RedHat family
 * dpkg in Debian family
 
-2. high-level: High-level PMs are based on the low-level PMs. They handle dependency management, i.e. installing/removing of dependencies.
+2. high-level: High-level PMs are based on the low-level PMs. They handle dependency management and automatic dependency resolving, i.e. downloading/installing/removing of dependencies when needed.
 * yum (RHEL, CentOS), dnf (Fedora) and zypper (SUSE) in RedHat family
 * apt and apt-cache in Debian family
+
+
+### Chapter VII. dpkg
+
+dpkg database is located at /var/lib/dpkg/
+dpkg is not aware of any repository. It knows, however, what is installed in the local system from dpkg database.
+
+##### Package namings:
+
+Binary package name:
+<name>\_<version>-<revision>\_<architecture>.deb
+e.g. logrotate\_3.7.8-1-\_amd64.deb
+64 bit architecture called amd64.
+
+Src package consists of:
+* upstream src package \*.tar.gz (from package maintainer)
+* metadata file \*.dsc describing the package
+* second src package that contains patches to the upstream source \*.debian.tar.gz
+
+##### Features
+
+List installed packages
+List contents of \*.deb package
+List files installed from a package
+Search what package installed a given file (bin, conf etc.)
+Query status of an installed package
+Show info about \*.deb package 
+
+install/upgrade \*.deb
+remove/purge pkg
+
+
+### Chapter X. APT
+APT software suite contains apt-cache and apt-get which are based on dpkg.
+
+##### Features
