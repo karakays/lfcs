@@ -135,14 +135,14 @@ pgrep -u root java  # list java processes owned by root
 ### Chapter V. Package managers
 In general, two families of package managers can be considered.
 
-a. rpm... RedHat Package Management
-rpm is low-level package manager.
-Higher-level PMs based on it and manage dependencies.
-yum: in RedHat
-DNF: in Fedora
-zypper: in SUSE
+1. rpm... RedHat Package Manager
+2. APT... Advanced Packaging Tool
 
-b. APT... advanced packaging tool
-dpkg is low-level package manager.
-apt-cache and apt-get is high-level PMs.
+Packaging systems can be classified in two levels:
+1. low-level: Low-level PMs deal with installation/removal only. They don't carry out dependency management. If a package is missing a dependency during installation, it will fail. Similarly, if a removal depends on some other package, it will also fail. 
+* rpm in RedHat family
+* dpkg in Debian family
 
+2. high-level: High-level PMs are based on the low-level PMs. They handle dependency management, i.e. installing/removing of dependencies.
+* yum (RHEL, CentOS), dnf (Fedora) and zypper (SUSE) in RedHat family
+* apt and apt-cache in Debian family
