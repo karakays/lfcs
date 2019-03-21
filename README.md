@@ -141,9 +141,9 @@ Packaging systems can be classified in two levels:
 * rpm in RedHat family
 * dpkg in Debian family
 
-2. high-level: High-level PMs are based on the low-level PMs. They handle dependency management and automatic dependency resolving, i.e. downloading/installing/removing of dependencies when needed.
+2. high-level: High-level PMs are based on the low-level PMs. They handle dependency management, automatic dependency resolving and accesses external software repositories i.e. downloading/installing/removing of dependencies when needed.
 * yum (RHEL, CentOS), dnf (Fedora) and zypper (SUSE) in RedHat family
-* apt and apt-cache in Debian family
+* apt suite in Debian family
 
 
 ### Chapter VII. dpkg
@@ -165,18 +165,43 @@ Src package consists of:
 
 ##### Features
 
-List installed packages
-List contents of \*.deb package
-List files installed from a package
-Search what package installed a given file (bin, conf etc.)
-Query status of an installed package
-Show info about \*.deb package 
+```bash
+$ dpkg -l         # List installed packages
+$ dpkg -c pkg.deb # List contents of \*.deb package
+$ dpkg -L package # List files installed from a package
+$ dpkg -S file    # Search what package installed <file> (bin, conf etc.)
+$ dpkg -s package # Query status of an installed package
+$ dpkg -I pkg.deb # Show info about \*.deb binary package 
+```
 
-install/upgrade \*.deb
-remove/purge pkg
-
+```bash
+$ dpkg -i pkg.deb ... # Install/update pkg.deb
+$ dpkg -r pkg.deb ... # Remove/purge (-P)
+```
 
 ### Chapter X. APT
-APT software suite contains apt-cache and apt-get which are based on dpkg.
+APT software suite contains mainly apt-cache and apt-get which are based on dpkg.
 
 ##### Features
+
+`apt-cache` queries packages from internal database (package index) at /var/lib/apt/lists.
+
+
+```bash
+$ apt-cache search term         # full text search on name and desc on all package lists
+$ apt-cache show/showpkg pkg    # show information on pkg - exact name search 
+$ apt-file search file          # search all packages that contains file
+$ apt-file list pkg             # list all files in the pkg. pkg doesn't need to be installed or fetched
+```
+
+```bash
+$ sudo apt-get autoremove       # uninstall not needed dependencies
+$ sudo apt-get clean            # delete installed package archives from cache
+```
+
+```bash
+$ sudo apt-get update       # sync package index lists with remote repos
+$ sudo apt-get install pkg  # install/update pkg
+$ sudo apt-get [--purge] remove pkg     # remove/purge pkg
+$ sudo apt-get upgrade                  # apply all available updates to all pkgs 
+```
