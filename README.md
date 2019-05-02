@@ -29,7 +29,7 @@ Helpful for proprietary sw or packages downloaded without package managers
 
 
 ##### /proc
-Pseudo-fs. for processes to keep internal state. Each process has its place as a subdirectory
+Pseudo-fs. Persists only in memory for processes to keep internal state. Each process has its place as a subdirectory
 
 ##### /root
 Home of root user
@@ -205,3 +205,139 @@ $ sudo apt-get install pkg  # install/update pkg
 $ sudo apt-get [--purge] remove pkg     # remove/purge pkg
 $ sudo apt-get upgrade                  # apply all available updates to all pkgs 
 ```
+
+### Chapter XI. System Monitoring
+
+##### Monitoring tools
+
+* process/load
+
+--- | --- |
+top, ps, pstree | processes
+uptime | load
+mpstat | multiprocessor usage
+strace | system calls tracing
+
+* memory/io
+
+--- | --- |
+free | brief memory usage
+vmstat | detailed memory and block io usge
+pmap | process memory map
+iostat | cpu/io stats
+
+* network
+
+--- | --- |
+netstat | 
+iptraf | ?
+
+##### System logging
+
+Important log files in `/var/log/`
+--- | --- |
+boot.log | system boot messages
+dmesg   | kernel messages
+syslog  | all important system messages
+security  |  security logging
+
+* /proc/ and /sys/ are pseudo-filesystems and contain information about the system state.
+
+##### /proc/
+* Current state of each process running: child processes, memory usage ...
+* /proc/interrupts contain statistics on interrupts
+    - how many times an interrupt type was handled by which CPU?
+* /proc/meminfo: meminfo 
+* /proc/sys/ contain tunable system parameters in plain text files
+    - /proc/sys/kernel: kernel paramters
+    - /proc/sys/vm: virtual memory paramters
+
+##### /sys/
+aka sysfs. Provides unified information on device and drivers of various types, unified device model. Much of the hw information moved from /proc to /sys.
+/dev vs /sys: /dev contains device files to access the devices themselves whereas /sys contains device information as powered on, vendor, model, bus etc.
+
+##### SAR
+System activity reporter for humans. Report is made up from the data that is collected by SADC in /var/log/sa periodically. Report can contain about
+    - IO, paging, network, per CPU, swap and memory, context switching etc.
+
+$ sudo sar 3 3  # default report 3 times in 3 seconds
+
+### Chapter XII. Process Monitoring
+
+##### ps
+
+```ps [pid]...```
+
+`ps` grabs the information from /proc fs.
+
+###### `ps` output columns
+
+vsz: virtual memory size in KB
+rss: resident set size (physical mem size excl. swap)
+cpu: cpu utilization
+wchan: kernel function where process is sleeping
+tty: attached terminal
+pri: priority
+ni: nice
+comm: executable name only
+args: command with all its args
+
+###### `ps` options
+
+ps aux  # interpret options in BSD style grouped
+ps -aux # interpret options in UNIX style grouped
+
+* a: BSD style all processes
+* u: output in user-oriented format
+* x: remove "must have tty" restriction
+* -e: UNIX style all processes
+* -o : customize output like ps -o pid,uid,cmd
+* -l : long format
+
+* `pstree` to visualize process hierarchy by pid or uid.
+pstree [options] [pid,user]
+
+### Chapter XIII. Memory Monitoring
+
+##### vmstat
+
+$ vmstat [delay] [count]
+
+* Mainly for memory stats but also for CPU, process and disk statistics
+
+###### `vmstat` output columns
+
+* procs
+    - r: # of processes in ready state
+    - b: # of processes in blocked state
+* memory and io
+    - swpd: swap size being used
+    - free: current free memory
+    - buff, cache: ?
+    - si: swap in virtual mem read blocks/sec
+    - so: swap out v mem written blocks/sec
+    - bi: blocks recvd from block device per sec
+    - bo: blocks sent to block device per sec
+* system and cpu
+    - in: interrupts per sec
+    - cs: context switches per sec
+    # rest in percentage
+    - us: CPU time spent running _user code_
+    - sy: CPU time spent running _kernel code_
+    - id: CPU time spent idle
+    - wa: CPU time spent blocked in IO 
+    - st: CPU time spent stolen from vm
+
+* -a option includes:
+    - active memory: pages recently used, might be clean or dirty?
+    - inactive memory: pages not been recently used
+
+* -d option for disk statistics
+
+###### Memory management
+
+* To come out of the memory pressure, kernel overcommits memory (exceed RAM + swap) because many processes don't use all requested memory. This applies for user processes only.
+
+* Overcommission is configured in `/proc/sys/vm/overcommit_memory` file.
+
+* OOM-killer
