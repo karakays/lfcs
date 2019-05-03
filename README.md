@@ -297,6 +297,8 @@ ps -aux # interpret options in UNIX style grouped
 * `pstree` to visualize process hierarchy by pid or uid.
 pstree [options] [pid,user]
 
+# TODO: do lab exercises
+
 ### Chapter XIII. Memory Monitoring
 
 ##### vmstat
@@ -313,7 +315,9 @@ $ vmstat [delay] [count]
 * memory and io
     - swpd: swap size being used
     - free: current free memory
-    - buff, cache: ?
+    - buff: buff vs cache??
+    - cache: cache for data on disk for reads and also writes.
+        * flush means write cache to disk.
     - si: swap in virtual mem read blocks/sec
     - so: swap out v mem written blocks/sec
     - bi: blocks recvd from block device per sec
@@ -336,8 +340,21 @@ $ vmstat [delay] [count]
 
 ###### Memory management
 
-* To come out of the memory pressure, kernel overcommits memory (exceed RAM + swap) because many processes don't use all requested memory. This applies for user processes only.
+* Swap area is moved back to memory when enough memory is freed or priority becomes in swap becomes higher - access required
+
+* To come out of the memory pressure, kernel overcommits memory (exceeds RAM + swap) by means of that many processes don't use all requested memory. This technique applies for user processes only.
 
 * Overcommission is configured in `/proc/sys/vm/overcommit_memory` file.
 
-* OOM-killer
+* In case available memory is exhausedted. OOM-killer exterminates process(es) selected to free up memory. The tricky part here is which process will be killed to keep the system alive.
+
+* The victim process is selected based on the value `badness` that is at /proc/{id}/oom_score`.
+
+* ```swapon/swappoff``` enable/disable devices for paging/swapping
+
+# TODO: do lab exercises
+
+
+### Chapter XIV. IO Monitoring
+
+* I/O-bound systems: CPU mostly idle waiting IO ops to complete.
