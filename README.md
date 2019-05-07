@@ -357,4 +357,60 @@ $ vmstat [delay] [count]
 
 ### Chapter XIV. IO Monitoring
 
-* I/O-bound systems: CPU mostly idle waiting IO ops to complete.
+* I/O-bound systems: CPU mostly idle waiting IO ops to complete such as disk or network ops.
+
+##### iostat
+
+* workhorse utility for IO monitoring.
+
+```$ vmstat [delay] [count]```
+
+* Mainly for io rw stats by disk partition with CPU utilization
+
+###### `iostat` output columns
+
+in what unit? disk block or KB by default?
+* logical IO requests can be merged into one actual request
+    - device: disk device or partition
+    - tps: io transactions per second
+    - kB_read/s: blocks read per seconds
+    - kB_wrtn/s: blocks written per seconds
+    - kB_read: total block read
+    - kB_wrtn: total block written
+
+* -x for extended output
+    - rrqm/s: # of read requests merged per sec, queued to device
+    - wrqm/s: # of write requests merged per sec, queued to device
+    - r/s: # of read requests per sec, to the device
+    - w/s: # of write requests per sec, to the device 
+    - rkB/s: KB read per sec 
+    - wkB/s: KB written per sec 
+    - avgrq-sz: average request size in 512 bytes per sector
+    - avgqu-sz: average queue length???
+    - await???
+    - svctime???
+    - %util???
+
+##### iotop
+
+* displays current IO usage by process updated periodically as in top.
+* requires root access
+
+###### `iostat` output columns
+    - SWAPIN: time percentage process blocked waiting swap in
+    - IO: time percentage process blocked waiting io
+    - PRIO: io priority
+
+##### IO scheduling
+
+* IO scheduling class:
+    - 0: none
+    - 1: real time as per priority
+    - 2: best effort as per priority
+    - 3: idle
+
+
+* ionice sets scheduling class/priority of a given process
+
+ionice [-c class] [-n pri] [-p pid] [cmd args]
+Apply io scheduling either for existing pid or by starting new process <cmd>
