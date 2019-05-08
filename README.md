@@ -405,12 +405,47 @@ in what unit? disk block or KB by default?
 
 * IO scheduling class:
     - 0: none
-    - 1: real time as per priority
-    - 2: best effort as per priority
-    - 3: idle
+    - 1: real time with a priority [0-7]
+    - 2: [default] best effort with a priority [0-7]
+    - 3: idle: served when there are no more requests
 
-
-* ionice sets scheduling class/priority of a given process
+* ionice sets scheduling class/priority of a given process manually
 
 ionice [-c class] [-n pri] [-p pid] [cmd args]
 Apply io scheduling either for existing pid or by starting new process <cmd>
+
+### Chapter XV. IO Scheduling
+
+* VM and VFS submit IO requests and it's the job of IO scheduler to prioritize and order these requests before they are given to block devices.
+
+* IO scheduling (sometimes conflicting) requirements:
+    - Minimize HW access:
+        * requests ordered according to the physical location on disk: elevator scheme. SSDs don't require elevator scheme (rotational = 0)
+        * requests are merged to get as big a contiguous region as possible
+    - Write operations can wait to migrate from caches to disk without stalling - async. Read ops are blocking until completed. Reads favored over writes
+    - Processes to share IO bandwidth fairly
+
+* There are different IO scheduling strategies available
+    - Completely Fair Queueing (CFQ)
+    - Deadling scheduling
+    - noop
+
+* IO scheduler strategy can be specified at kernel boottime or at runtime and per device
+    - to see available and current strategy, check `/sys/block/sda/queue/scheduler`
+    - to switch the io scheduler
+    ```echo noop > /sys/block/sda/queue/scheduler```
+
+* IO scheduling tunables are at ```/sys/block/<device>/queue/iosched/``` directory. These parameters are based on the strategy and change from one strategy to another.
+
+* In CFQ, each process have its own request queue which works with a global dispatcher queue that submits actual requests to the device. Dequeuing each of these queues is done in round-robin style and each queue works in FIFO order. Tunables:
+    - quantum: max len of dispatcher queue
+    - fifo_expire_async: expiry time of async request (buffered write) in queue. After it expires, it goes to dispatcher queue.
+    - back_seek_max: max distance for backwards seeking. repositioning the head backwards is bad performance.
+
+* Deadline strategy works based on the deadline - expiry of each request that guarantees to be served. There are 2 queues for r and w ordered by starting block, another 2 ordered by submission time and one dispatcher queue. Tunables:
+    - read_expire: deadline for r request
+    - write_expire: deadline for w request
+    - write_starved: reads are preffered to writes. how many w requests can be starved?
+    - fifo_batch: # of requests to move from sorted list to dispatcher when deadlines expired.
+    - front_merges: related with contiguous requests?
+
