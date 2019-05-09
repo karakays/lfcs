@@ -40,14 +40,13 @@ For variable and volatile data that changes frequently. Logs, spool directories 
 ##### /run
 Pseudo-fs. For transient data that contains runtime information as lock files
 
-
 ### Chapter III Processes
 
 `orphan`: A process whose process has terminated. Its PPID is set to 1 that is, it's adopted by `init`.
 
 `zombie`: A child process terminates without its parent gets notified of this. It still has an entry in the process table. 
 
-`wait` system call can be made by a process after forking a child process. Parent suspends execution and wait child process to complete and gets notified of its exit status.
+`wait` is a system call that may be submitted by a process after forking a child process. Parent suspends execution and wait child process to complete and gets notified of its exit status.
 
 PID is 16 bit integer located in /proc/sys/kernel/pid_max and can be altered.
 
@@ -65,20 +64,21 @@ At any given time, a process is running in a certain execution mode.
     * kernel mode: when executing system calls to access hardware resources memory, disk, peripherals.
 
 ##### fork and exec
-
 $ ls
 bash process forks itself and a new copy, i.e. child process is created. fork() returns child's PID to parent. bash process goes into sleep state with `wait` system call on its child.
 copy process makes `exec` system call and loads `ls` code in the child process space and executes it.
 when execution completed, child process terminates via exit system call and returns exit code to kernel.
 bash receives exit status either via polling or SIGCHLD signal handler from kernel, removes child's entry from process table (i.e. reaped) and it resumes execution.
 
-D    uninterruptible sleep (usually IO)
-R    running or runnable (on run queue)
-S    interruptible sleep (waiting for an event to complete)
-T    stopped by job control signal (Ctrl+Z)
-t    stopped by debugger during the tracing
-X    dead (should never be seen)
-Z    defunct ("zombie") process, terminated but not reaped by its parent
+state code |  Description
+--- | --- 
+D   | uninterruptible sleep (usually IO)
+R   | running or runnable (on run queue)
+S   | interruptible sleep (waiting for an event to complete)
+T   | stopped by job control signal (Ctrl+Z)
+t   | stopped by debugger during the tracing
+X   | dead (should never be seen)
+Z   | defunct ("zombie") process, terminated but not reaped by its parent
 
 Kernel-created processes can run in
     * kernel space for maintenance work
@@ -270,34 +270,33 @@ $ sudo sar 3 3  # default report 3 times in 3 seconds
 
 `ps` grabs the information from /proc fs.
 
-###### `ps` output columns
-
-vsz: virtual memory size in KB
-rss: resident set size (physical mem size excl. swap)
-cpu: cpu utilization
-wchan: kernel function where process is sleeping
-tty: attached terminal
-pri: priority
-ni: nice
-comm: executable name only
-args: command with all its args
+###### `ps` output table
+column | description
+--- | ---
+vsz | virtual memory size in KB
+rss | resident set size (physical mem size excl. swap)
+cpu | cpu utilization
+wchan | kernel function where process is sleeping
+tty | attached terminal
+pri | priority
+ni | nice
+comm | executable name only
+args | command with all its args
 
 ###### `ps` options
 
-ps aux  # interpret options in BSD style grouped
-ps -aux # interpret options in UNIX style grouped
+```ps aux  # interpret options in BSD style grouped```
+```ps -aux # interpret options in UNIX style grouped```
 
-* a: BSD style all processes
-* u: output in user-oriented format
-* x: remove "must have tty" restriction
-* -e: UNIX style all processes
-* -o : customize output like ps -o pid,uid,cmd
-* -l : long format
+a: BSD style all processes
+u: output in user-oriented format
+x: remove "must have tty" restriction
+-e: UNIX style all processes
+-o : customize output like ps -o pid,uid,cmd
+-l : long format
 
 * `pstree` to visualize process hierarchy by pid or uid.
 pstree [options] [pid,user]
-
-# TODO: do lab exercises
 
 ### Chapter XIII. Memory Monitoring
 
