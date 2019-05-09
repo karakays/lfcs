@@ -298,15 +298,25 @@ x: remove "must have tty" restriction
 * `pstree` to visualize process hierarchy by pid or uid.
 pstree [options] [pid,user]
 
-### Chapter XIII. Memory Monitoring
+### Chapter XIII Memory Monitoring
+
+Virtual memory consists of resident memory and swap area.
 
 ##### vmstat
 
-$ vmstat [delay] [count]
+`/proc/sys/vm/` contains tunables for the virtual memory system.
+entry | purpose
+---   | ---
+overcommit_memory | enable/disable overcommitting
+overcommit_ratio | ?
+oom_kill_allocating_task | let oom-killer kill the task that triggered
 
-* Mainly for memory stats but also for CPU, process and disk statistics
+```vmstat [options] [delay] [count]```
+`vmstat` is used mainly for memory stats but also for CPU, process and disk statistics.
+-a option includes active and inactive memory namely pages recently used (might be clean or dirty) and pages not been recently used.
+-d option is for disk statistics.
 
-###### `vmstat` output columns
+###### output columns
 
 * procs
     - r: # of processes in ready state
@@ -317,42 +327,30 @@ $ vmstat [delay] [count]
     - buff: buff vs cache??
     - cache: cache for data on disk for reads and also writes.
         * flush means write cache to disk.
-    - si: swap in virtual mem read blocks/sec
-    - so: swap out v mem written blocks/sec
+    - si: swap in v-mem read blocks/sec
+    - so: swap out v-mem written blocks/sec
     - bi: blocks recvd from block device per sec
     - bo: blocks sent to block device per sec
 * system and cpu
     - in: interrupts per sec
     - cs: context switches per sec
-    # rest in percentage
-    - us: CPU time spent running _user code_
-    - sy: CPU time spent running _kernel code_
-    - id: CPU time spent idle
-    - wa: CPU time spent blocked in IO 
-    - st: CPU time spent stolen from vm
-
-* -a option includes:
-    - active memory: pages recently used, might be clean or dirty?
-    - inactive memory: pages not been recently used
-
-* -d option for disk statistics
+    - us: %CPU time spent running _user code_
+    - sy: %CPU time spent running _kernel code_
+    - id: %CPU time spent idle
+    - wa: %CPU time spent blocked in IO 
+    - st: %CPU time spent stolen from vm
 
 ###### Memory management
 
-* Swap area is moved back to memory when enough memory is freed or priority becomes in swap becomes higher - access required
+* Swap area is moved back to memory when enough memory is freed or priority becomes in swap becomes higher.
 
 * To come out of the memory pressure, kernel overcommits memory (exceeds RAM + swap) by means of that many processes don't use all requested memory. This technique applies for user processes only.
 
 * Overcommission is configured in `/proc/sys/vm/overcommit_memory` file.
 
-* In case available memory is exhausedted. OOM-killer exterminates process(es) selected to free up memory. The tricky part here is which process will be killed to keep the system alive.
+* In case available memory is exhauseted, OOM-killer exterminates process(es) selected to free up memory. The hard part here is which process will be killed to keep the system alive. To avoid the whole system to crash, a victim process is selected to free up memory. Selection is based on the value `badness` that is at /proc/{id}/oom_score`.
 
-* The victim process is selected based on the value `badness` that is at /proc/{id}/oom_score`.
-
-* ```swapon/swappoff``` enable/disable devices for paging/swapping
-
-# TODO: do lab exercises
-
+```swapon/swappoff [devices...] # enable/disable devices for paging/swapping```
 
 ### Chapter XIV. IO Monitoring
 
