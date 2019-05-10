@@ -302,8 +302,6 @@ pstree [options] [pid,user]
 
 Virtual memory consists of resident memory and swap area.
 
-##### vmstat
-
 `/proc/sys/vm/` contains tunables for the virtual memory system.
 entry | purpose
 ---   | ---
@@ -311,8 +309,10 @@ overcommit_memory | enable/disable overcommitting
 overcommit_ratio | ?
 oom_kill_allocating_task | let oom-killer kill the task that triggered
 
+##### vmstat
+
 ```vmstat [options] [delay] [count]```
-`vmstat` is used mainly for memory stats but also for CPU, process and disk statistics.
+`vmstat` is the workhorse utility used mainly for memory stats but also for CPU, process and disk statistics.
 -a option includes active and inactive memory namely pages recently used (might be clean or dirty) and pages not been recently used.
 -d option is for disk statistics.
 
