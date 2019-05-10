@@ -354,65 +354,70 @@ oom_kill_allocating_task | let oom-killer kill the task that triggered
 
 ### Chapter XIV. IO Monitoring
 
-* I/O-bound systems: CPU mostly idle waiting IO ops to complete such as disk or network ops.
+In an I/O-bound system, the CPU is mostly idle waiting IO ops to complete such as disk or network ops.
 
-##### iostat
+##### `iostat`
 
-* workhorse utility for IO monitoring.
+```$ iostat [delay] [count]```
 
-```$ vmstat [delay] [count]```
+iostat is the workhorse utility for IO monitoring. It shows mainly RW transfer rates by disk partition including CPU utilization. The first report (row) is stats since the system boot.
 
-* Mainly for io rw stats by disk partition with CPU utilization
+###### output columns
+Data is expressed in number of blocks. A block have a size of 512 bytes.
 
-###### `iostat` output columns
-
-in what unit? disk block or KB by default?
 * logical IO requests can be merged into one actual request
-    - device: disk device or partition
-    - tps: io transactions per second
-    - kB_read/s: blocks read per seconds
-    - kB_wrtn/s: blocks written per seconds
-    - kB_read: total block read
-    - kB_wrtn: total block written
 
-* -x for extended output
-    - rrqm/s: # of read requests merged per sec, queued to device
-    - wrqm/s: # of write requests merged per sec, queued to device
-    - r/s: # of read requests per sec, to the device
-    - w/s: # of write requests per sec, to the device 
-    - rkB/s: KB read per sec 
-    - wkB/s: KB written per sec 
-    - avgrq-sz: average request size in 512 bytes per sector
-    - avgqu-sz: average queue length???
-    - await???
-    - svctime???
-    - %util???
+field | desc
+---   | ---
+device | disk device [or partition]
+tps | io transactions per second
+kB_read/s | blocks read per seconds in kB
+kB_wrtn/s | blocks written per seconds in kB
+kB_read | total block read in kB
+kB_wrtn | total block written in kB
+
+* -x option for extended output
+
+field | desc
+---   | ---
+rrqm/s | # of read requests merged per sec, queued to device
+wrqm/s | # of write requests merged per sec, queued to device
+r/s | # of read requests per sec, to the device
+w/s | # of write requests per sec, to the device 
+rkB/s | KB read per sec 
+wkB/s | KB written per sec 
+avgrq-sz | average request size in 512 bytes per sector
+avgqu-sz | average queue length???
+await | avg time elapsed in ms for queueing + servicing IO request
+svctime | avg service time in ms for IO request
+%util | ???
 
 ##### iotop
 
 * displays current IO usage by process updated periodically as in top.
 * requires root access
 
-###### `iostat` output columns
-    - SWAPIN: time percentage process blocked waiting swap in
-    - IO: time percentage process blocked waiting io
-    - PRIO: io priority
+* output columns
+
+field | desc
+---   | ---
+SWAPIN | time percentage process blocked waiting swap in
+IO | time percentage process blocked waiting io
+PRIO | io priority
 
 ##### IO scheduling
+* Every process is associated with an IO classifier and priority. `ionice` sets scheduling class/priority of a given process manually
 
+```ionice [-c class] [-n pri] [-p pid] [cmd args]```
+
+Apply io scheduling either for existing pid or by starting new process <cmd>
 * IO scheduling class:
     - 0: none
     - 1: real time with a priority [0-7]
     - 2: [default] best effort with a priority [0-7]
     - 3: idle: served when there are no more requests
 
-* ionice sets scheduling class/priority of a given process manually
-
-ionice [-c class] [-n pri] [-p pid] [cmd args]
-Apply io scheduling either for existing pid or by starting new process <cmd>
-
 ### Chapter XV. IO Scheduling
-
 * VM and VFS submit IO requests and it's the job of IO scheduler to prioritize and order these requests before they are given to block devices.
 
 * IO scheduling (sometimes conflicting) requirements:
