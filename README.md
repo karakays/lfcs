@@ -432,22 +432,25 @@ Apply io scheduling either for existing pid or by starting new process <cmd>
     - Deadling scheduling
     - noop
 
-* IO scheduler strategy can be specified at kernel boottime or at runtime and per device
+* IO scheduler strategy can be specified per device at __kernel boottime__ or at __runtime__
     - to see available and current strategy, check `/sys/block/sda/queue/scheduler`
     - to switch the io scheduler
     ```echo noop > /sys/block/sda/queue/scheduler```
 
 * IO scheduling tunables are at ```/sys/block/<device>/queue/iosched/``` directory. These parameters are based on the strategy and change from one strategy to another.
 
-* In CFQ, each process have its own request queue which works with a global dispatcher queue that submits actual requests to the device. Dequeuing each of these queues is done in round-robin style and each queue works in FIFO order. Tunables:
+##### CFQ
+
+* In CFQ, each process have its own request queue which works with a global dispatcher queue that submits actual requests to the device. Dequeuing each of these queues is done in round-robin style. Each queue is allocated timeslices to access the disk and works in FIFO order. Tunables:
     - quantum: max len of dispatcher queue
     - fifo_expire_async: expiry time of async request (buffered write) in queue. After it expires, it goes to dispatcher queue.
     - back_seek_max: max distance for backwards seeking. repositioning the head backwards is bad performance.
 
-* Deadline strategy works based on the deadline - expiry of each request that guarantees to be served. There are 2 queues for r and w ordered by starting block, another 2 ordered by submission time and one dispatcher queue. Tunables:
+##### Deadline
+
+* Deadline strategy works based on the deadline - expiry of each request that guarantees to be served. There are 2 queues for r and w ordered by starting block (elevator queue), another 2 ordered by submission time (expire queue) and one global dispatcher queue. Scheduler checks expired requests first and only then moves to the elevator queue. Tunables:
     - read_expire: deadline for r request
     - write_expire: deadline for w request
     - write_starved: reads are preffered to writes. how many w requests can be starved?
     - fifo_batch: # of requests to move from sorted list to dispatcher when deadlines expired.
     - front_merges: related with contiguous requests?
-
