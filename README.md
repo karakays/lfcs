@@ -55,13 +55,13 @@ PID is 16 bit integer located in /proc/sys/kernel/pid_max and can be altered.
 
 ##### Permissions
 A process can inherit permissions from 
-    * executor - the user who executes it
-    * executable - executable binary file, `setuid` bit set.
+* executor - the user who executes it
+* executable - executable binary file, `setuid` bit set.
 
 ##### Execution modes
 At any given time, a process is running in a certain execution mode.
-    * user mode: usually when executing application code
-    * kernel mode: when executing system calls to access hardware resources memory, disk, peripherals.
+* user mode: usually when executing application code
+* kernel mode: when executing system calls to access hardware resources memory, disk, peripherals.
 
 ##### fork and exec
 $ ls
@@ -81,8 +81,8 @@ X   | dead (should never be seen)
 Z   | defunct ("zombie") process, terminated but not reaped by its parent
 
 Kernel-created processes can run in
-    * kernel space for maintenance work
-    * user space - usually short lived
+* kernel space for maintenance work
+* user space - usually short lived
 
 Their parent is kthreadd[2] and names are in encapsulated brackets.
 
@@ -103,9 +103,9 @@ shared: Such libraries can be loaded into application at runtime - also called d
 
 A way of communication with a process (basic IPC)
 It can originate from:
-   * _user_: via `kill` command
-   * _a process_: must be via system call through kernel
-   * _kernel_: e.g. a process makes an illegal memory reference
+* _user_: via `kill` command
+* _a process_: must be via system call through kernel
+* _kernel_: e.g. a process makes an illegal memory reference
 
 `kill` is the command to send signals to a process.
 
@@ -246,11 +246,11 @@ security  |  security logging
 ##### /proc/
 * Current state of each process running: child processes, memory usage ...
 * /proc/interrupts contain statistics on interrupts
-    - how many times an interrupt type was handled by which CPU?
+- how many times an interrupt type was handled by which CPU?
 * /proc/meminfo: meminfo 
 * /proc/sys/ contain tunable system parameters in plain text files
-    - /proc/sys/kernel: kernel paramters
-    - /proc/sys/vm: virtual memory paramters
+- /proc/sys/kernel: kernel paramters
+- /proc/sys/vm: virtual memory paramters
 
 ##### /sys/
 aka sysfs. Provides unified information on device and drivers of various types, unified device model. Much of the hw information moved from /proc to /sys.
@@ -258,7 +258,7 @@ aka sysfs. Provides unified information on device and drivers of various types, 
 
 ##### SAR
 System activity reporter for humans. Report is made up from the data that is collected by SADC in /var/log/sa periodically. Report can contain about
-    - IO, paging, network, per CPU, swap and memory, context switching etc.
+- IO, paging, network, per CPU, swap and memory, context switching etc.
 
 $ sudo sar 3 3  # default report 3 times in 3 seconds
 
@@ -319,26 +319,26 @@ oom_kill_allocating_task | let oom-killer kill the task that triggered
 ###### output columns
 
 * procs
-    - r: # of processes in ready state
-    - b: # of processes in blocked state
+- r: # of processes in ready state
+- b: # of processes in blocked state
 * memory and io
-    - swpd: swap size being used
-    - free: current free memory
-    - buff: buff vs cache??
-    - cache: cache for data on disk for reads and also writes.
-        * flush means write cache to disk.
-    - si: swap in v-mem read blocks/sec
-    - so: swap out v-mem written blocks/sec
-    - bi: blocks recvd from block device per sec
-    - bo: blocks sent to block device per sec
+- swpd: swap size being used
+- free: current free memory
+- buff: buff vs cache??
+- cache: cache for data on disk for reads and also writes.
+    * flush means write cache to disk.
+- si: swap in v-mem read blocks/sec
+- so: swap out v-mem written blocks/sec
+- bi: blocks recvd from block device per sec
+- bo: blocks sent to block device per sec
 * system and cpu
-    - in: interrupts per sec
-    - cs: context switches per sec
-    - us: %CPU time spent running _user code_
-    - sy: %CPU time spent running _kernel code_
-    - id: %CPU time spent idle
-    - wa: %CPU time spent blocked in IO 
-    - st: %CPU time spent stolen from vm
+- in: interrupts per sec
+- cs: context switches per sec
+- us: %CPU time spent running _user code_
+- sy: %CPU time spent running _kernel code_
+- id: %CPU time spent idle
+- wa: %CPU time spent blocked in IO 
+- st: %CPU time spent stolen from vm
 
 ###### Memory management
 
@@ -412,45 +412,81 @@ PRIO | io priority
 
 Apply io scheduling either for existing pid or by starting new process <cmd>
 * IO scheduling class:
-    - 0: none
-    - 1: real time with a priority [0-7]
-    - 2: [default] best effort with a priority [0-7]
-    - 3: idle: served when there are no more requests
+- 0: none
+- 1: real time with a priority [0-7]
+- 2: [default] best effort with a priority [0-7]
+- 3: idle: served when there are no more requests
 
 ### Chapter XV. IO Scheduling
 * VM and VFS submit IO requests and it's the job of IO scheduler to prioritize and order these requests before they are given to block devices.
 
 * IO scheduling (sometimes conflicting) requirements:
-    - Minimize HW access:
-        * requests ordered according to the physical location on disk: elevator scheme. SSDs don't require elevator scheme (rotational = 0)
-        * requests are merged to get as big a contiguous region as possible
-    - Write operations can wait to migrate from caches to disk without stalling - async. Read ops are blocking until completed. Reads favored over writes
-    - Processes to share IO bandwidth fairly
+- Minimize HW access:
+    * requests ordered according to the physical location on disk: elevator scheme. SSDs don't require elevator scheme (rotational = 0)
+    * requests are merged to get as big a contiguous region as possible
+- Write operations can wait to migrate from caches to disk without stalling - async. Read ops are blocking until completed. Reads favored over writes
+- Processes to share IO bandwidth fairly
 
 * There are different IO scheduling strategies available
-    - Completely Fair Queueing (CFQ)
-    - Deadling scheduling
-    - noop
+- Completely Fair Queueing (CFQ)
+- Deadling scheduling
+- noop
 
 * IO scheduler strategy can be specified per device at __kernel boottime__ or at __runtime__
-    - to see available and current strategy, check `/sys/block/sda/queue/scheduler`
-    - to switch the io scheduler
-    ```echo noop > /sys/block/sda/queue/scheduler```
+- to see available and current strategy, check `/sys/block/sda/queue/scheduler`
+- to switch the io scheduler
+```echo noop > /sys/block/sda/queue/scheduler```
 
 * IO scheduling tunables are at ```/sys/block/<device>/queue/iosched/``` directory. These parameters are based on the strategy and change from one strategy to another.
 
 ##### CFQ
 
 * In CFQ, each process have its own request queue which works with a global dispatcher queue that submits actual requests to the device. Dequeuing each of these queues is done in round-robin style. Each queue is allocated timeslices to access the disk and works in FIFO order. Tunables:
-    - quantum: max len of dispatcher queue
-    - fifo_expire_async: expiry time of async request (buffered write) in queue. After it expires, it goes to dispatcher queue.
-    - back_seek_max: max distance for backwards seeking. repositioning the head backwards is bad performance.
+- quantum: max len of dispatcher queue
+- fifo_expire_async: expiry time of async request (buffered write) in queue. After it expires, it goes to dispatcher queue.
+- back_seek_max: max distance for backwards seeking. repositioning the head backwards is bad performance.
 
 ##### Deadline
 
 * Deadline strategy works based on the deadline - expiry of each request that guarantees to be served. There are 2 queues for r and w ordered by starting block (elevator queue), another 2 ordered by submission time (expire queue) and one global dispatcher queue. Scheduler checks expired requests first and only then moves to the elevator queue. Tunables:
-    - read_expire: deadline for r request
-    - write_expire: deadline for w request
-    - write_starved: reads are preffered to writes. how many w requests can be starved?
-    - fifo_batch: # of requests to move from sorted list to dispatcher when deadlines expired.
-    - front_merges: related with contiguous requests?
+- read_expire: deadline for r request
+- write_expire: deadline for w request
+- write_starved: reads are preffered to writes. how many w requests can be starved?
+- fifo_batch: # of requests to move from sorted list to dispatcher when deadlines expired.
+- front_merges: related with contiguous requests?
+
+### Chapter XVI. Filesystems
+
+Applications do not access the physical disk directly. Instead, application code access data contents by file names which is an abstraction by the filesystem.
+
+Every file is associated with an inode. inode is a datastructures that holds following metadata about the file:
+* permissions
+* owner / owner group
+* size
+* timestamps (last accessed, modified, change)
+To read a file content, you need to have inode number, first. File names are not stored in the file inodes but in the directory inode. Directory is a special file which holds a table that maps file names to inode ids. The name-inode mapping is called `link`.
+```ln [-s] target link-name # creates a link```
+* Hard link points to an inode. As a result, the same file can have multiple names mapped to the same inode.
+* Soft link points to a filename
+
+The entire filesystem tree doesn't need to be in one local disk partition. Some branches may be in another partition, network or removable media (usb etc.) Such branches are `mounted` to the filesystem tree.
+
+##### Virtual file system
+Application code doesn't change when accessing files in different disk partitions which might be using different filesystems. VFS is an abstraction layer that provides transparent data access from the underlying filesystem. This permits Linux to work with many filesystems:
+* Linux native fs: ext4
+* Windows native fs: fat32, vfat, ntfs
+* Pseudo-fs: /proc, /sys, /dev
+* Network fs; ntfs
+* xfs: default fs in RHEL
+`/proc/filesystem` holds the filesystem list suppored by the kernel.
+
+##### Special file systems
+Kernel employs them for certain tasks, not available to user space.
+Filesystem | Mount point | purpose
+--- |   --- |  ---
+rootfs  | none | 
+proc    | /proc |
+tmpfs   | Anywhere | file storage in RAM
+sysfs   | /sys |
+
+```df [file]... # file system and disk usage report```
