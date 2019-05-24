@@ -479,6 +479,7 @@ Application code doesn't change when accessing files in different disk partition
 * Network fs; ntfs
 * xfs: default fs in RHEL
 `/proc/filesystem` holds the filesystem list suppored by the kernel.
+`page` is smallest unit of data for virtual memory and a fixed-length contiguous block.
 
 ##### Special file systems
 Kernel employs them for certain tasks, not available to user space.
@@ -489,4 +490,84 @@ proc    | /proc |
 tmpfs   | Anywhere | file storage in RAM
 sysfs   | /sys |
 
-```df [file]... # file system and disk usage report```
+```df [file]... # disk space on all mounted filesystems```
+
+### Chapter XVII. Disk partitioning
+
+##### Common disk types
+* SATA
+* SCSI
+* USB
+* SSD
+
+##### Disk geometry
+* `fdisk` to manipulate the partition table.
+Rotational disks consist of platters, each of which is read by heads as disk spins. Tracks are divided into sectors in 512 byte size. SSDs are not rotational and have no moving parts.
+
+##### Partitioning
+Disk is divided into contiguous groups of sectors called partitions. Partitioning promotes:
+* separation of user space from system space.
+* easier backups
+* performance and security enhancement on certain parts
+* swap can be isolated
+A partition is associated with
+* type: primary, extended or logical
+* start: start sector
+* end: end sector
+
+Partition table schemes:
+#### MBR
+* old and obsolete. Stored in the first 512 bytes of the disk. up to 4 primary partitions and one can be as an extended partition.
+* Table has 4 entries and each 16 bytes size. Entry in the table contains active bit, file system code (xfs, ext4, swap etc.) and number of sectors.
+
+#### GPT
+* modern.
+* Up to 128 entries in the table and each 128 bytes of size.
+
+Kernel interacts with disk devices (found in /dev directory) through VFS. SCSI and SATA disks follow xxy[z] naming convention where xx is device type (sd), y is drive number and z is partition number as in `/dev/sdb1` or `/dev/sdc4`
+
+`blkid` reports block device metadata (attributes).
+
+`lsblk` lists block devices in a tree format.
+
+`blkid` and `lsblk` work only with block devices.
+
+#### Backup partition tables
+
+To backup MBR, copy MBR table
+```sudo dd if=/dev/sda of=mbrbackup bs=512 count=1```
+
+To restore MBR write it back to the disk
+```sudo dd if=mbrbackupk of=/dev/sda bs=512 count=1```
+
+To backup GPT, use `sgdisk`
+```sudo sgdisk --backup=sdabackup /dev/sda```
+
+#### Partition table editors
+command | Desc
+--- |   ---
+fdisk  | most standard tool, works interactively
+sfdisk | non-interactive fdisk for scripting
+parted | GNU partition manipulation
+gparted| gui for parted
+gdisk  | guid partition table manipulator
+sgdisk | script interface for gdisk
+
+To create a partition with `parted`
+```sudo parted /dev/loop0 unit MB mkpart primary ext4 0 256```
+You can specify partition file-system here or later with `mkfs`.
+
+* /proc/partitions is what kernel is aware of partitions.
+
+* ```losetup``` to associate a file or block device with a loop device. A loop device is pseudo device which makes a file to be accessed as a block device. Certain commands like `lsblk` work only with block devices.
+
+
+### Chapter XVIII. Filesystem features
+
+Extended attributes are metadata that filesystem does not handle directly. `lsattr` to list and `chattr` to change attributes.
+
+Flags:
+* a: append-only
+* i: immutable
+* d: skip dump
+* A: set access time only when mod-time changes
