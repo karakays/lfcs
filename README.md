@@ -571,3 +571,50 @@ Flags:
 * i: immutable
 * d: skip dump
 * A: set access time only when mod-time changes
+
+Formatting a filesystem means creating a filesystem on a partition. `mkfs` utility exists for this.
+
+```sudo mkfs -t [fs] [device-file]```
+equivalent to ```sudo mkfs.ext4 [device-file]```
+
+#### Checking/repairing filesystems
+Check and fix filesystem error with ```fsck```. It should only run on unmounted systems.
+```sudo fsck -t [fs] [device-file]```
+equivalent to ```sudo fsck.ext4 [device-file]```
+
+_journaling_ filesystems are much faster to check than older systems because not the whole filesystem needs to be checked only last failed transactions.
+
+#### Mounting filesystem
+n order to access a block device from the virtual filesystem, it first needs to be attached to the root directory tree at some point. You mount filesystems (on some device), not block devices directly. 
+
+Question: Do I need to have a filesystem on a device before being able to mount it? Try and see.
+
+```mount [target] [mount-point]``` and ```umount [mount-point]``` to unmount. Mount point directory needs to exist before. Non-empty directories can be used as mount points.
+[target] can be either a device-file, a partition label or filesystem UUIDs. device-node can change at boot time (based on which device picked up first) and labels do not force unique names. UUIDs is reliable as it's unique to specify a device. Filesystem UUIDs are generated when creating (format) a filesystem.
+
+Question: how can a filesystem UUID and device-file can be treated the same as a mount target. One is a block device and the other is a filesystem on it. That would also mean FS UUID is globally unique across all the hardware devices in the system. Based on the above, I think, you cannot mount a device without creating a filesystem on it, first.
+
+```mount UUID=<fs-uuid> /mount-point```
+```mount LABEL=<fs-label> /mount-point```
+
+-t option for filesystem, optional `mount` can detect a filesystem.
+
+
+```unmount [devicel-file | mount-point]```
+If any terminal is open or any process is working in the mountpoint, unmount will fail with `target is busy error`.
+
+#### Network shares
+Mount remote filesystem with same `mount` command and work locally. The most common remote type is `Network File System (NFS)`.
+
+```sudo mount -t nfs example.com:/home/karakays /mount```
+
+#### Mounting at boot
+```mount -a``` is used to mount all filesystems specified in `/etc/fstab`. Filesystems are mount as in their order in `fstab`. It contains space-separated values and also describes who may mount with what permissions. During boot time, `mount -a` is executed.
+```<device, uuid, label> <mount-point> <type> <options in csv> <fsck pass or not>```
+
+#### Automatic mount
+You can let filesystems mount automatically when they are accessed. _systemd_ has built-in support for that using `/etc/fstab` file. This saves you extra mount commands.
+
+```\# sample entry in /etc/fstab
+LABEL=yubikey /mount ext4 noauto,x-systemd.automount,x-systemd.device-timeout=10,x-systemd.idle-timeout=30```
+noauto to disable auto mounting at boot. x-systemd.automount indicates systemd automount facility used.
