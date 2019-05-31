@@ -363,7 +363,7 @@ In an I/O-bound system, the CPU is mostly idle waiting IO ops to complete such a
 iostat is the workhorse utility for IO monitoring. It shows mainly RW transfer rates by disk partition including CPU utilization. The first report (row) is stats since the system boot.
 
 ###### output columns
-Data is expressed in number of blocks. A block have a size of 512 bytes.
+Disk IO is expressed in number of blocks, the unit of work. Every read and write is done in multiple units of blocks.
 
 * logical IO requests can be merged into one actual request
 
@@ -618,3 +618,71 @@ You can let filesystems mount automatically when they are accessed. _systemd_ ha
 ```\# sample entry in /etc/fstab
 LABEL=yubikey /mount ext4 noauto,x-systemd.automount,x-systemd.device-timeout=10,x-systemd.idle-timeout=30```
 noauto to disable auto mounting at boot. x-systemd.automount indicates systemd automount facility used.
+
+### Chapter XIX. Filesystem features
+
+#### Swap
+
+* Most memory is used to cache file contents to prevent going to the disk more than necessary. _Such _pages_ are never swapper out_. _dirty pages_ (file content in memory != of in disk) are flushed out to disk.
+
+* Memory use by Linux kernel never swapped out!
+
+`mkswap device [size]` to set up a swap are in a device or _file_ given.
+`swapon [device/file...]` to enable swapping on device given.
+`swapoff [device/file...]` to disable swapping on device given.
+
+#### Filesystem quotas
+Disk quotas control maximum space particular users can have on the disk. It works on a mounted filesystem basis.
+
+* To create quota, filesystem must be mounted with `usrquota` or `grpquota` options.
+
+* `quotacheck` generates quota accounting files at root of quoted filesystem i.e. aquota.user, aquota.group
+
+* `quotaon` and `quotaoff` to enable/disable quoting on a per filesystem basis.
+
+* `quota` used to report on quotas. -u and -g options for current user/group. root can query any user's quota.
+
+```sudo quota alice     # quora report of alice```
+
+##### Setting up quotas
+edquota is the quota editor to set it up. There are limits on blocks and on inodes. Limits are specified as soft and hard limits where hard limits can never be exceeded. Soft limits can be exceeded for a grace period. Grace periods are set per filesystem.
+
+```edquota -u alice``` to edit limits of a user.
+
+##### `df`
+`disk free` lists all filesystems mounted, mountpoints and available space on each.
+`disk usage` shows disk usage recursively starting from cwd. -s option to display a total for each argument without being recursive, -c to display grand total.
+
+### Chapter XX. ext filesystems
+
+`ext4` is default filesystem on most Linux distributions. Many enhancements achieved over ext2/3 such as, maximum filesystem size, maximum number of subdirectoeis, block allocation optimizations, faster fsck, more reliable journaling etc.
+
+* Block size is selected when filesystem is formatted, 512, 1024, 2048 or 4096 bytes. A block must fit into a memory page and because of that you cannot have 8K block in 4K pages.
+
+* `inode reservation` is used to improve performance where a certain number of inodes are alocated ahead when directory is created.
+
+#### ext4 layout
+Disk blocks are grouped together into block groups. The first disk block 0 is reserved for partition boot sector?? and called boot block.  
+The first and second blocks are same for every block group and comprise _superblock_ and _group descriptors_. Kernel uses first superblock (primary) and references other back superblock copies only during fsck until a healthy one is found.
+
+![ext filesystem layout](/assets/ext_filesystem.png)
+
+* superblock contains global information about the filesystem.
+    - filesystem status to check during OS boot. If it's not cleanly unmounted, fsck is run before it gets mounted.
+    - total mount count (reset in every `fsck`) and max mount count.
+    - filesystem block size (set with `mkfs`)
+    - disk blocks per block group
+    - free block count
+    - free inode count
+    - OS id
+
+* block and inode bitmaps contain 0s and 1s to indicate whether block/inode is free/used in the respective block group where they reside.
+
+* inode table?
+
+* `dumpe2fs` dumps ext file system information.
+```dumpe2fs <device>
+
+* `tune2fs` to tune ext filesystem parameters.
+
+fragmentation: As new files get written and some deleted over the time, gaps are created in the disk. Sometimes, a new file doesn't quite fit in a gap so it needs to be split into parts and written into multiple areas in the disk. Reading a fragmented file is slow. Defragmentation tools enable to look for such files and restore them in contiguous blocks for faster reads.
