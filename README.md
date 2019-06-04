@@ -500,8 +500,16 @@ sysfs   | /sys |
 * USB
 * SSD
 
+##### /dev/sd{order}{partition}
+* `/dev/sd*` is disk device file which could be of type SCSI, SATA or USB. Following letter identifies the order, `/dev/sda` is the first device, `/dev/sdb` the second etc. The number refers to partition number, `/dev/sda2` is the second partition on `/dev/sda`.
+
+`blkid` reports block device attributes.
+
+`lsblk` lists block devices in a tree format.
+
+`blkid` and `lsblk` work only with block devices.
+
 ##### Disk geometry
-* `fdisk` to manipulate the partition table.
 Rotational disks consist of platters, each of which is read by heads as disk spins. Tracks are divided into sectors in 512 byte size. SSDs are not rotational and have no moving parts.
 
 ##### Partitioning
@@ -514,25 +522,25 @@ A partition is associated with
 * type: primary, extended or logical
 * start: start sector
 * end: end sector
+* filesystem
 
-Partition table schemes:
-#### MBR
-* old and obsolete. Stored in the first 512 bytes of the disk. up to 4 primary partitions and one can be as an extended partition.
+##### Partition table schemes
+The content of hardware disk starts disk metadata, e.g. partition tables.
+###### MBR
+* Dates back to early days of MSDOS. In some tools, aka, _dos_ or _msdos_. Table is stored in the first 512 bytes of the disk. Up to 4 primary partitions of which one as an extended partition.
 * Table has 4 entries and each 16 bytes size. Entry in the table contains active bit, file system code (xfs, ext4, swap etc.) and number of sectors.
 
-#### GPT
-* modern.
-* Up to 128 entries in the table and each 128 bytes of size.
+[disk with MBR scheme][https://lms.quickstart.com/custom/799658/images/partition_table_small.png]
 
-Kernel interacts with disk devices (found in /dev directory) through VFS. SCSI and SATA disks follow xxy[z] naming convention where xx is device type (sd), y is drive number and z is partition number as in `/dev/sdb1` or `/dev/sdc4`
+###### GPT
+* modern. disk starts with the GPT header (and also proactive MBR for backwards compatibilit)
+* Up to 128 entries (partitions) in the table and each 128 bytes of size.
 
-`blkid` reports block device metadata (attributes).
+[disk with GPT scheme][https://lms.quickstart.com/custom/799658/images/GPT%20Layout.png]
 
-`lsblk` lists block devices in a tree format.
+* The partition table comes with the vendor and it's possible to migrate it from MBR to GPT but it's not hard to brick the machine while doing so, thus, benefits are not worth the risk.
 
-`blkid` and `lsblk` work only with block devices.
-
-#### Backup partition tables
+##### Backup partition tables
 
 To backup MBR, copy MBR table
 ```sudo dd if=/dev/sda of=mbrbackup bs=512 count=1```
@@ -543,10 +551,11 @@ To restore MBR write it back to the disk
 To backup GPT, use `sgdisk`
 ```sudo sgdisk --backup=sdabackup /dev/sda```
 
-#### Partition table editors
+##### Partition table editors
+Tools below at hardware device level. No filesystems need to be mounted ahead.
 command | Desc
 --- |   ---
-fdisk  | most standard tool, works interactively
+fdisk  | most standard tool, works interactively for both MBR and GPT
 sfdisk | non-interactive fdisk for scripting
 parted | GNU partition manipulation
 gparted| gui for parted
