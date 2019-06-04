@@ -686,3 +686,17 @@ The first and second blocks are same for every block group and comprise _superbl
 * `tune2fs` to tune ext filesystem parameters.
 
 fragmentation: As new files get written and some deleted over the time, gaps are created in the disk. Sometimes, a new file doesn't quite fit in a gap so it needs to be split into parts and written into multiple areas in the disk. Reading a fragmented file is slow. Defragmentation tools enable to look for such files and restore them in contiguous blocks for faster reads.
+
+### Chapter XXI. XFS and btrfs filesystems
+Next generation filesystems with roboust capabilities challenge the dominance of `ext4` in Enterprise Linux distributions.
+
+#### XFS
+* Some of the features include handling of filesystems up to 16EB, of invidual files up to 8EB, Direct Memory Access IO, IO rate guarantee etc.
+
+* As opposed to `ext4`, most of the maintenance tasks can be done online (while fs mounted): defragmentation, resize, dumping
+
+#### btrfs
+* Intended to address lack of some features like efficiency via COW technique, snapshots, pooling, checksums in `ext4`. It's the default fs in OpenSUSE.
+
+* Revert to earlier snapshopts of the filesystem.
+
