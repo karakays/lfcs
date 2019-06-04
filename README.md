@@ -628,7 +628,8 @@ Mount remote filesystem with same `mount` command and work locally. The most com
 You can let filesystems mount automatically when they are accessed. _systemd_ has built-in support for that using `/etc/fstab` file. This saves you extra mount commands.
 
 ```\# sample entry in /etc/fstab
-LABEL=yubikey /mount ext4 noauto,x-systemd.automount,x-systemd.device-timeout=10,x-systemd.idle-timeout=30```
+LABEL=yubikey /mount ext4 noauto,x-systemd.automount,x-systemd.device-timeout=10,x-systemd.idle-timeout=30
+```
 noauto to disable auto mounting at boot. x-systemd.automount indicates systemd automount facility used.
 
 ### XIX. Filesystem features
