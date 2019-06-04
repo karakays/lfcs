@@ -500,8 +500,10 @@ sysfs   | /sys |
 * USB
 * SSD
 
-##### /dev/sd{order}{partition}
+##### Device naming scheme `/dev/sd{order}{partition}`
 * `/dev/sd*` is disk device file which could be of type SCSI, SATA or USB. Following letter identifies the order, `/dev/sda` is the first device, `/dev/sdb` the second etc. The number refers to partition number, `/dev/sda2` is the second partition on `/dev/sda`.
+
+* SSD device naming scheme is `/dev/nvme{order}n{ns}p{part}`. {order} represents order, `/dev/nvme0n1` is the first SSD device, `/dev/nvm1n1` the second etc. {ns} is the namespace and {part} is the partition number, e.g. `/dev/nvme0n1p1` represents device nvme0, with namespace 1 and partition 1.
 
 `blkid` reports block device attributes.
 
