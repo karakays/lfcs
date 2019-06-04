@@ -1,4 +1,4 @@
-### Chapter II Filesystem layout
+### II. Filesystem layout
 
 FHS… initiative to standardise filesystem organization in distributions
 
@@ -40,7 +40,7 @@ For variable and volatile data that changes frequently. Logs, spool directories 
 ##### /run
 Pseudo-fs. For transient data that contains runtime information as lock files
 
-### Chapter III Processes
+### III. Processes
 
 `orphan`: A process whose process has terminated. Its PPID is set to 1 that is, it's adopted by `init`.
 
@@ -99,7 +99,7 @@ shared: Such libraries can be loaded into application at runtime - also called d
 
 `ldd` list shared dependencies of an executable.
 
-### Chapter IV Signals
+### IV. Signals
 
 A way of communication with a process (basic IPC)
 It can originate from:
@@ -130,7 +130,7 @@ SIGPIPE | Terminate | Broken pipe; socket closed
 pgrep -u root java  # list java processes owned by root
 
 
-### Chapter V. Package managers
+### V. Package managers
 In general, two families of package managers can be considered.
 
 1. rpm... RedHat Package Manager
@@ -146,7 +146,7 @@ Packaging systems can be classified in two levels:
 * apt suite in Debian family
 
 
-### Chapter VII. dpkg
+### VII. dpkg
 
 dpkg database is located at /var/lib/dpkg/
 dpkg is not aware of any repository. It knows, however, what is installed in the local system from dpkg database.
@@ -179,7 +179,7 @@ $ dpkg -i pkg.deb ... # Install/update pkg.deb
 $ dpkg -r pkg.deb ... # Remove/purge (-P)
 ```
 
-### Chapter X. APT
+### X. APT
 APT software suite contains mainly apt-cache and apt-get which are based on dpkg.
 
 ##### Features
@@ -206,7 +206,7 @@ $ sudo apt-get [--purge] remove pkg     # remove/purge pkg
 $ sudo apt-get upgrade                  # apply all available updates to all pkgs 
 ```
 
-### Chapter XI. System Monitoring
+### XI. System Monitoring
 
 ##### Monitoring tools
 
@@ -262,7 +262,7 @@ System activity reporter for humans. Report is made up from the data that is col
 
 $ sudo sar 3 3  # default report 3 times in 3 seconds
 
-### Chapter XII. Process Monitoring
+### XII. Process Monitoring
 
 ##### ps
 
@@ -298,7 +298,7 @@ x: remove "must have tty" restriction
 * `pstree` to visualize process hierarchy by pid or uid.
 pstree [options] [pid,user]
 
-### Chapter XIII Memory Monitoring
+### XIII. Memory Monitoring
 
 Virtual memory consists of resident memory and swap area.
 
@@ -352,7 +352,7 @@ oom_kill_allocating_task | let oom-killer kill the task that triggered
 
 ```swapon/swappoff [devices...] # enable/disable devices for paging/swapping```
 
-### Chapter XIV. IO Monitoring
+### XIV. IO Monitoring
 
 In an I/O-bound system, the CPU is mostly idle waiting IO ops to complete such as disk or network ops.
 
@@ -417,7 +417,7 @@ Apply io scheduling either for existing pid or by starting new process <cmd>
 - 2: [default] best effort with a priority [0-7]
 - 3: idle: served when there are no more requests
 
-### Chapter XV. IO Scheduling
+### XV. IO Scheduling
 * VM and VFS submit IO requests and it's the job of IO scheduler to prioritize and order these requests before they are given to block devices.
 
 * IO scheduling (sometimes conflicting) requirements:
@@ -455,7 +455,7 @@ Apply io scheduling either for existing pid or by starting new process <cmd>
 - fifo_batch: # of requests to move from sorted list to dispatcher when deadlines expired.
 - front_merges: related with contiguous requests?
 
-### Chapter XVI. Filesystems
+### XVI. Filesystems
 
 Applications do not access the physical disk directly. Instead, application code access data contents by file names which is an abstraction by the filesystem.
 
@@ -492,7 +492,7 @@ sysfs   | /sys |
 
 ```df [file]... # disk space on all mounted filesystems```
 
-### Chapter XVII. Disk partitioning
+### XVII. Disk partitioning
 
 ##### Common disk types
 * SATA
@@ -572,7 +572,7 @@ You can specify partition file-system here or later with `mkfs`.
 * ```losetup``` to associate a file or block device with a loop device. A loop device is pseudo device which makes a file to be accessed as a block device. Certain commands like `lsblk` work only with block devices.
 
 
-### Chapter XVIII. Filesystem features
+### XVIII. Filesystem features
 
 Extended attributes are metadata that filesystem does not handle directly. `lsattr` to list and `chattr` to change attributes.
 
@@ -629,7 +629,7 @@ You can let filesystems mount automatically when they are accessed. _systemd_ ha
 LABEL=yubikey /mount ext4 noauto,x-systemd.automount,x-systemd.device-timeout=10,x-systemd.idle-timeout=30```
 noauto to disable auto mounting at boot. x-systemd.automount indicates systemd automount facility used.
 
-### Chapter XIX. Filesystem features
+### XIX. Filesystem features
 
 #### Swap
 
@@ -663,7 +663,7 @@ edquota is the quota editor to set it up. There are limits on blocks and on inod
 `disk free` lists all filesystems mounted, mountpoints and available space on each.
 `disk usage` shows disk usage recursively starting from cwd. -s option to display a total for each argument without being recursive, -c to display grand total.
 
-### Chapter XX. ext filesystems
+### XX. ext filesystems
 
 `ext4` is default filesystem on most Linux distributions. Many enhancements achieved over ext2/3 such as, maximum filesystem size, maximum number of subdirectoeis, block allocation optimizations, faster fsck, more reliable journaling etc. Another improvement is using _extents_ for large files. ext3 used to hold a list of individual block pointers that a file allocates. That didn't scale well for large files, for a 1GB file, it needs 256K pointers (in 4K blocks). In ext4 instead, a group of contiguous blocks are used which are called _extents_.
 
@@ -697,7 +697,7 @@ The first and second blocks are same for every block group and comprise _superbl
 
 fragmentation: As new files get written and some deleted over the time, gaps are created in the disk. Sometimes, a new file doesn't quite fit in a gap so it needs to be split into parts and written into multiple areas in the disk. Reading a fragmented file is slow. Defragmentation tools enable to look for such files and restore them in contiguous blocks for faster reads.
 
-### Chapter XXI. XFS and btrfs filesystems
+### XXI. XFS and btrfs filesystems
 Next generation filesystems with roboust capabilities challenge the dominance of `ext4` in Enterprise Linux distributions.
 
 #### XFS
