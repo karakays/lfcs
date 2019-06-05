@@ -501,9 +501,9 @@ sysfs   | /sys |
 * SSD
 
 ##### Device naming scheme `/dev/sd{order}{partition}`
-* `/dev/sd*` is disk device file which could be of type SCSI, SATA or USB. Following letter identifies the order, `/dev/sda` is the first device, `/dev/sdb` the second etc. The number refers to partition number, `/dev/sda2` is the second partition on `/dev/sda`.
+* `/dev/sd*` is the entire disk device file which could be of type SCSI, SATA or USB. Following letter identifies the order, `/dev/sda` is the first device, `/dev/sdb` the second etc. The number refers to partition number, `/dev/sda2` is the second partition on `/dev/sda`.
 
-* SSD device naming scheme is `/dev/nvme{order}n{ns}p{part}`. {order} represents order, `/dev/nvme0n1` is the first SSD device, `/dev/nvm1n1` the second etc. {ns} is the namespace and {part} is the partition number, e.g. `/dev/nvme0n1p1` represents device nvme0, with namespace 1 and partition 1.
+* SSD device naming scheme is `/dev/nvme{order}n{ns}p{part}`. {order} represents order, `/dev/nvme0n1` is the first entire disk device, `/dev/nvm1n1` the second etc. {ns} is the namespace and {part} is the partition number, e.g. `/dev/nvme0n1p1` represents device nvme0, with namespace 1 and partition 1.
 
 `blkid` reports block device attributes.
 
@@ -558,12 +558,19 @@ Tools below at hardware device level. No filesystems need to be mounted ahead.
 
 command | Desc
 --- |   ---
-fdisk  | most standard tool, works interactively for both MBR and GPT
+fdisk  | most standard interactive tool, works for MBR and GPT
 sfdisk | non-interactive fdisk for scripting
-parted | GNU partition manipulation
+parted | GNU version, interactive tool, works for MBR and GPT
 gparted| gui for parted
 gdisk  | guid partition table manipulator
 sgdisk | script interface for gdisk
+
+##### fdisk
+```fdisk -l         # list all partitions```
+```fdisk <device>   # go to interactive mode for device```
+
+##### parted
+```parted <device> <command> <options>```
 
 To create a partition with `parted`
 ```sudo parted /dev/loop0 unit MB mkpart primary ext4 0 256```
@@ -572,7 +579,6 @@ You can specify partition file-system here or later with `mkfs`.
 * /proc/partitions is what kernel is aware of partitions.
 
 * ```losetup``` to associate a file or block device with a loop device. A loop device is pseudo device which makes a file to be accessed as a block device. Certain commands like `lsblk` work only with block devices.
-
 
 ### XVIII. Filesystem features
 
@@ -584,7 +590,7 @@ Flags:
 * d: skip dump
 * A: set access time only when mod-time changes
 
-Formatting a filesystem means creating a filesystem on a partition. `mkfs` utility exists for this.
+Formatting a filesystem means creating a filesystem on a partition. `mkfs` utility exists for this. Be careful, formatting a filesystem deletes existing content!
 
 ```sudo mkfs -t [fs] [device-file]```
 equivalent to ```sudo mkfs.ext4 [device-file]```
@@ -597,9 +603,7 @@ equivalent to ```sudo fsck.ext4 [device-file]```
 _journaling_ filesystems are much faster to check than older systems because not the whole filesystem needs to be checked only last failed transactions.
 
 #### Mounting filesystem
-n order to access a block device from the virtual filesystem, it first needs to be attached to the root directory tree at some point. You mount filesystems (on some device), not block devices directly. 
-
-Question: Do I need to have a filesystem on a device before being able to mount it? Try and see.
+In order to access a block device from the virtual filesystem, it first needs to be attached to the root directory tree at some point. You mount filesystems (on some device), not block devices directly, so mounting is related with the filesystem rather then directly the disk device itself.
 
 ```mount [target] [mount-point]``` and ```umount [mount-point]``` to unmount. Mount point directory needs to exist before. Non-empty directories can be used as mount points.
 [target] can be either a device-file, a partition label or filesystem UUIDs. device-node can change at boot time (based on which device picked up first) and labels do not force unique names. UUIDs is reliable as it's unique to specify a device. Filesystem UUIDs are generated when creating (format) a filesystem.
@@ -694,7 +698,7 @@ The first and second blocks are same for every block group and comprise _superbl
 * inode table?
 
 * `dumpe2fs` dumps ext file system information.
-```dumpe2fs <device>
+```dumpe2fs <device>```
 
 * `tune2fs` to tune ext filesystem parameters.
 
