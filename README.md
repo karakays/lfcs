@@ -606,7 +606,7 @@ _journaling_ filesystems are much faster to check than older systems because not
 In order to access a block device from the virtual filesystem, it first needs to be attached to the root directory tree at some point. You mount filesystems (on some device), not block devices directly, so mounting is related with the filesystem rather then directly the disk device itself.
 
 ```mount [target] [mount-point]``` and ```umount [mount-point]``` to unmount. Mount point directory needs to exist before. Non-empty directories can be used as mount points.
-[target] can be either a device-file, a partition label or filesystem UUIDs. device-node can change at boot time (based on which device picked up first) and labels do not force unique names. UUIDs is reliable as it's unique to specify a device. Filesystem UUIDs are generated when creating (format) a filesystem.
+[target] can be either a device-file, a partition label or filesystem UUIDs. device-node can change at boot time (based on which device picked up first) and labels do not force unique names. UUIDs is reliable as it's unique to specify a filesystem globally. Filesystem UUIDs are generated when creating (format) a filesystem. `blkid` can list device nodes and filesystem information on it without having it mounted first!
 
 Question: how can a filesystem UUID and device-file can be treated the same as a mount target. One is a block device and the other is a filesystem on it. That would also mean FS UUID is globally unique across all the hardware devices in the system. Based on the above, I think, you cannot mount a device without creating a filesystem on it, first.
 
@@ -614,7 +614,6 @@ Question: how can a filesystem UUID and device-file can be treated the same as a
 ```mount LABEL=<fs-label> /mount-point```
 
 -t option for filesystem, optional `mount` can detect a filesystem.
-
 
 ```unmount [devicel-file | mount-point]```
 If any terminal is open or any process is working in the mountpoint, unmount will fail with `target is busy error`.
@@ -634,7 +633,7 @@ You can let filesystems mount automatically when they are accessed. _systemd_ ha
 ```\# sample entry in /etc/fstab
 LABEL=yubikey /mount ext4 noauto,x-systemd.automount,x-systemd.device-timeout=10,x-systemd.idle-timeout=30
 ```
-noauto to disable auto mounting at boot. x-systemd.automount indicates systemd automount facility used.
+noauto to disable auto mounting at boot. x-systemd.automount indicates systemd automount facility used. idle-timeout lets filesystem umount automaticaly after it stays idle timeout.
 
 ### XIX. Filesystem features
 
@@ -717,3 +716,32 @@ Next generation filesystems with roboust capabilities challenge the dominance of
 
 * Revert to earlier snapshopts of the filesystem.
 
+### XXII. Encrypting disks
+
+Encryption at the block device level provides strong protection. Linux Unified Key Setup is the standard method in Linux that provides this facility. LUKE is installed on top of `cryptsetup` utility.
+
+##### cryptsetup
+`cryptsetup` is to manage LUKS encrypted partitions.
+```cryptsetup [options...] <action> <action args>```
+
+Format the partition with LUKS and sets a symmetric secret. This is done only once.
+```sudo cryptosetup luksFormat /dev/sda2```
+Make partition unencrypt and available to use, asks for secret interactively.
+luksOpen creates a mapping from which the partition will be available. The device will be located at /dev/mapper/name.
+```sudo cryptosetup luksOpen /dev/sda2 name```
+From now on, use the device as if it were unencrypted partition.
+Format filesystem first and mount
+```sudo mkfs.ext4 /dev/mapper/name``` 
+```sudo mount /dev/mapper/name /mnt``` 
+When done, unmount it and remove the mapping with luksClose.
+```sudo umount /dev/mapper/name``` 
+```sudo cryptsetup lukeClose /dev/mapper/name```
+
+##### Mounting at boot
+To mount an encrypted partition at boot time, add a normal entry to /etc/fstab. /etc/fstab is not aware that device is encrypted.
+/dev/mapper/name /mnt ext4 defaults 0 0
+Add entry to /etc/crypttab to specify mapping. <target> is mapped device name, source is actual block device which can be device file, uuid or label. If <key-file> is omitted, secret will be asked from the console.
+<target> <source> [<key-file>]
+name /dev/sda
+
+Swap partitions can be encrypted, too.
