@@ -833,3 +833,33 @@ Create a software raid device
 
 #### Hot spare
 A hot spare is used as a failover mechanism. It is active in the cluster and is switched into operation when a disk fails. A hot spare can be created when creating RAID array or later on via the `mdadm`.
+
+
+### XXXIV. Network addresses
+
+#### IPv4
+* IPv4 is of 4 bytes where IPv6 is of 16 bytes.
+
+* A IPv4 address consists of a network portion and a host portion. Bother together identifies a host's network and address in the network. `netmask` is used to determine how much of the address belongs to network portion and host portion.
+
+- unicast: associated with a specific host
+- network: host portion is set to 0, e.g. x.x.x.0
+- broadcast: host portion is set to 1, e.g. x.x.x.1
+- multicast: only nodes that are appropriately configured will listen to a multicast.
+
+Reserved addresses:
+- 0.0.0.0 denotes unknown address of the host. DHCP uses this address when communicating to server.
+
+IPv4 address classes:
+class |  most significant octet range | network portion in bits | netmask
+--- | ---                             | ---                     | 
+A   | 1-127                           | 8                       | x.0.0.0
+B   | 128-191                         | 16                      | x.x.0.0
+C   | 192-223                         | 24                      | x.x.x.0
+D   | 224-239                         | na                      | na
+E   | 240-254                         | na                      | na
+
+network address = unicast & netmask
+
+#### Hostname
+* In DNS, hostnames are appended with a dot and domain name to qualify FQDN, e.g. debian.karakays.com
