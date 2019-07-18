@@ -745,3 +745,91 @@ Add entry to /etc/crypttab to specify mapping. <target> is mapped device name, s
 name /dev/sda
 
 Swap partitions can be encrypted, too.
+
+### XXIII. LVM
+
+Logical Volume Management is about grouping physical partitions together from one or more devices into a big logical volume group. This volume pool is subdivided into logical volumes of which each mimics a physical disk partition to the system. A filesystem is places in a logical volume and ultimately, volume gets mounted to be accessible.
+
+Advantages:
+    * Room for parallelization improvements with data striping (spreading out a filesystem to more than one disk, i.e. a logical volume spread to more one disk)
+    * Logical volumes can be easily resized even if it already contains a filesystem.
+
+[](https://lms.quickstart.com/custom/799658/images/LVM_Components_large%20(1).png)
+
+#####  Manage _physical volumes_ via pv* tools
+`pvcreate`: Convert a partition to physical volume. Refer to a physical partitition directly.
+    ```pvcreate /dev/sda7```
+`pvdisplay`: List physical volumes
+`pvmove`: Moves data from one physical volume to the others
+`pvremove`: Removes physical volume
+
+##### Manage _volume groups_ via vg* tools
+`vgcreate`: Create volume group. Refer to a physical volumes to include. Creates /dev/myvg device file.
+    ```vgcreate myvg /dev/sda7```
+`vgextend`: Extend volume group. Refer to a physical volumes when extending
+    ```vgextend <pv2>```
+`vgreduce`: Shrinks volume group
+
+##### Manage _logical volumes_ via lv* tools
+`lvcreate`: Create a logical volume in `/dev/myvg/mylv`
+    ```lvcreate -L 50G -n mylv vg```
+    ```mkfs.ext4 /dev/myvg/mylv```
+`lvdisplay`: list logical volumes
+
+Steps in creating a logical volume
+
+1. Create physical volumes from partitions, 1-to-1 mapping
+2. Create a volume group by including physical volumes 
+3. Extend volume group with extra physical volumes if need be
+3. Create logical volumes within the group. Specify the size in bytes or number of extents (size unit in a volume group, by default 4MB). That means a logical volume do not reference any physical partition or disk, which, I suppose, explains how a logical volume can be spread into multiple physical partitions.
+4. Format a logical volume via mkfs
+5. Mount the logical volume
+
+##### Resizing a logical volume
+Resizing can be done even if lv contains a filesystem.
+* lvextend
+* lvreduce
+* resize2fs
+* lvresize
+
+To expand a lv, volume, first, needs expanded, then the filesystem.
+```lvextend -L +500M /dev/vg/mylvm```
+```resize2fs /dev/vg/mylvm```
+
+To shrink a volume, first shrink the filesystem then the volume.
+```resize2fs /dev/vg/mylvm 200M```
+```lvreduce -L -200MB /dev/vg/mylvm```
+
+`-r` option in `lvresize` command does this automatically by resizing both the volume and filesystem.
+```lvresize -r -L 20 GB /dev/VG/mylvm```
+
+#### LVM snapshots
+A snapshot of an existing logical volume is useful for backup, app testing or deployin VMs etc.
+* When original lv changes, original data blocks are copied to the snapshot??
+* But if data is added to the snapshot, it's only stored there
+
+### XXIV. RAID
+
+Redundant Array of Independant Disks is clustering of physical disks to enable data integrity and recoverability. Disk IO activity is spread into the cluster. Data striping provides parallel writes that increases performance.
+RAID can be implemented either in software or in hardware. Linux kernel supports software RAID. `mdadm` is the tool to create and manage software RAID devices.
+
+On the other hand, hardware RAID are transparent to OS.
+Features:
+* mirroring - storage clustering for availability
+* striping - splitting filesystems to more than one disk
+* parity - fault tolerant with extra data for error recovery
+
+#### RAID levels
+Raid levels increas by complexity.
+
+* RAID 0: striping only
+* RAID 1: mirroring only
+* RAID 5: striping and fault-tolerant up to 1 disk loss. Requires at least 3 disks.
+* RAID 6: striping and fault-tolerant with dual parity up to 2 disk loss. Requires at least 4 disks.
+* RAID10: mirroring and strping.
+
+Create a software raid device
+```mdadm --create /dev/md0 --level=1 --raid-disks=2 /dev/sdb1 /dev/sdc1```
+
+#### Hot spare
+A hot spare is used as a failover mechanism. It is active in the cluster and is switched into operation when a disk fails. A hot spare can be created when creating RAID array or later on via the `mdadm`.
