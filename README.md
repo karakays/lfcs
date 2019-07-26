@@ -872,16 +872,20 @@ Network devices are not associated with a device file, they are known by names a
 * wlan0, wlan1, wlp3s0, wlp3s1 for wireless devices
 
 #### `ip`
-`ip` tool is used to configure, control and query network devices or interface parameters. It's preferred tool over the deprecated `ifconfig`. `ip` is a multiplex utility.
+`ip` is a multiplex tool that is used to configure, control and query network devices or interface parameters. It's preferred tool over the deprecated `ifconfig`.
 
 ```ip [ options] object <command>``` where object can be
 
 object      | function
 ===         | ===
 address     | IPv4 or v6 address
-link        | network devices
+link        | network devices (interface)
 route       | routing table entries
 monitor     | watch for netlink messages
+
+```ip addr show wlp3s0```  # show address of interface
+```ip link show            # list network devices```
+```ip link set eth0 down   # bring eth0 down```
 
 #### PNIDN
 Traditional network device naming scheme is unpredictable. One network device name can be assigned to another device in the next boot. To solve that, `Predictable Network Interface Device Names` is introduced which incorportes more device details when assigning names to network interfaces
@@ -891,14 +895,14 @@ Traditional network device naming scheme is unpredictable. One network device na
 * MAC address, e.g. enx7837d1ea46da
 * old classic method, e.g. eth0
 
-#### NIC configuration files
-Network configurations applied by `ip` or `ifconfig` are non-persistent. To survive it after a system restart, network interface configuration files, NIC, need to be used which depend on distribution
+#### NIC
+Network configurations applied by `ip` or `ifconfig` tools  are _non-persistent_, in other words, this configuration is lost after reboot. To make it persistent, network interface configuration files, NIC, need to be used of which format depends on distro
 * RedHat: /etc/sysconfig/network
 * Debian: /etc/network/interfaces
 * SUSE: /etc/sysconfig/network
 
 #### Network Manager
-`Network Manager` is systemd service that manages network configurations by hiding the complexity of NIC editing. It is used to list wireless networks in range, enter network passwords, turn devices on/off etc. It comes in several interfaces.
+`Network Manager` is a `systemd` service that manages network configurations. It generates the ultimate NIC file and by doing so it saves manual editing of NIC files. It is also used to list wireless networks in range, enter network passwords, turn devices on/off etc. It comes in several client interfaces.
 
 * GUI offered by Desktop Environment. 
 * nmtui: text user interface (on terminal) for network manager.
@@ -906,8 +910,14 @@ Network configurations applied by `ip` or `ifconfig` are non-persistent. To surv
 
 nmtui and nmcli are distro independent and abstract differences in NICs.
 
+```nmcli device wifi list                                   # list wifi networks in range```
+```nmcli device wifi connect <ssid>                         # connect to network
+```nmcli connection show                                    # list connection profiles
+```nmcli connection show <ssid>                             # show details of ssid
+```nmcli con modify <ssid> +ipv4.addreses 192.168.1.10      # configure static IP
+
 #### Routing
-For every TCP/IP packet being transmitted, they are forwarded to intermediate routers so long until it reaches its final destination. The routing table is searched to find the next stop of a packet. This is done by comparing routing entries with the destination address of the packet. Packet is forwarded to the gateway address of the routing entry found. To see current routing table
+For every TCP/IP packet being transmitted, network interfaces, sometimes, cannot transmit packets directly to the destination and need to forward to intermediate routers. A routing table is here to help find the next stop of a packet. This is done by comparing routing entries in the table with the final destination address of the packet. Packet is forwarded to the gateway address of the routing entry found, Some routing entries might not have a gateway which is indicated with the absence of `G` flag. To see current routing table
 
 ```$ ip route show```
 
@@ -923,9 +933,20 @@ flag    | e.g. U for up, G for network has gateway
 metric  | priority in case multiple matches are found
 
 ##### Default route
-Default route is chosen when destination address doesn't match any entry in the routing table. 
+Fallback route chosen in case destination address doesn't match any entry in the routing table. 
 It can be obtained dynamically using DHCP or configured manually via `nmcli` or editing NIC. To set it in the NIC file, `gateway` keywork is used in the configuration.
 
 ##### Static routes
-Static routing entries can be added to the table via `ip` command??
+Static routing entries can be added to the table via `ip` command. By default, local network address is setup as a static route so that peer to peer requests can be made in the LAN without involving the default gateway.
 ```sudo ip route add <args>```
+
+#### DNS
+
+* `/etc/hosts` is the place for static name resolutions, a local host database. If a name resolution cannot be done here, a DNS resolver gets queried whose addresses are at `/etc/resolv.conf`. NetworkManager can edit this file invoking DHCP on the primary network interface.
+
+* `/etc/hosts.allow` and `/etc/hosts.deny` contain access control rules for TCP wrappers. A rule is related to clients (based on ip or domain name) can access what service (sshd, ftpd, etc.) on the system.
+
+##### Diagnostic tools
+
+`traceroute` traces the path of a request along its way to the final destination. It shows how router packets flow.
+`mtr` combines `ping` and `traceroute` commands. It constantly sends requests and continuously updates trace display like `top`.
