@@ -863,3 +863,24 @@ network address = unicast & netmask
 
 #### Hostname
 * In DNS, hostnames are appended with a dot and domain name to qualify FQDN, e.g. debian.karakays.com
+
+
+
+#### `ip`
+
+Use `ip link` object to manage network devices (interfaces)
+
+ip link show            # list network devices
+ip link set eth0 down   # bring eth0 down
+
+#### DNS
+
+* `/etc/hosts` is the place for static name resolutions. If a name resolution cannot be done here, a DNS resolver gets queried whose addresses are at `/etc/resolv.conf`. NetworkManager can edit this file invoking DHCP on the primary network interface.
+
+* `/etc/hosts.allow` and `/etc/hosts.deny` contain access control rules for TCP wrappers. A rule is related to clients (based on ip or domain name) can access what service (sshd, ftpd, etc.) on the system.
+
+##### Diagnostic tools
+
+`traceroute` traces the path of a request along its way to the destination. It shows router packets flow.
+`mtr` combines `ping` and `traceroute` commands, sends requests constantly and continuously updates display like top.
+
