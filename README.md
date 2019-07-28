@@ -911,10 +911,10 @@ Network configurations applied by `ip` or `ifconfig` tools  are _non-persistent_
 nmtui and nmcli are distro independent and abstract differences in NICs.
 
 ```nmcli device wifi list                                   # list wifi networks in range```
-```nmcli device wifi connect <ssid>                         # connect to network
-```nmcli connection show                                    # list connection profiles
-```nmcli connection show <ssid>                             # show details of ssid
-```nmcli con modify <ssid> +ipv4.addreses 192.168.1.10      # configure static IP
+```nmcli device wifi connect <ssid>                         # connect to network```
+```nmcli connection show                                    # list connection profiles```
+```nmcli connection show <ssid>                             # show details of ssid```
+```nmcli con modify <ssid> +ipv4.addreses 192.168.1.10      # configure static IP```
 
 #### Routing
 For every TCP/IP packet being transmitted, network interfaces, sometimes, cannot transmit packets directly to the destination and need to forward to intermediate routers. A routing table is here to help find the next stop of a packet. This is done by comparing routing entries in the table with the final destination address of the packet. Packet is forwarded to the gateway address of the routing entry found, Some routing entries might not have a gateway which is indicated with the absence of `G` flag. To see current routing table
