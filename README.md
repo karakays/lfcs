@@ -834,7 +834,6 @@ Create a software raid device
 #### Hot spare
 A hot spare is used as a failover mechanism. It is active in the cluster and is switched into operation when a disk fails. A hot spare can be created when creating RAID array or later on via the `mdadm`.
 
-
 ### XXXIV. Network addresses
 
 #### IPv4
@@ -864,26 +863,93 @@ network address = unicast & netmask
 #### Hostname
 * In DNS, hostnames are appended with a dot and domain name to qualify FQDN, e.g. debian.karakays.com
 
+* hostname is kept at `/etc/hostname`. `hostname` command displays it.
 
+### XXXV. Network devs and configuration
+
+Network devices are not associated with a device file, they are known by names as
+* eth0, eth1  for ethernet devices
+* wlan0, wlan1, wlp3s0, wlp3s1 for wireless devices
 
 #### `ip`
+`ip` is a multiplex tool that is used to configure, control and query network devices or interface parameters. It's preferred tool over the deprecated `ifconfig`.
 
-Use `ip link` object to manage network devices (interfaces)
+```ip [ options] object <command>``` where object can be
 
-ip link show            # list network devices
-ip link set eth0 down   # bring eth0 down
+object      | function
+===         | ===
+address     | IPv4 or v6 address
+link        | network devices (interface)
+route       | routing table entries
+monitor     | watch for netlink messages
+
+```ip addr show wlp3s0```  # show address of interface
+```ip link show            # list network devices```
+```ip link set eth0 down   # bring eth0 down```
+
+#### PNIDN
+Traditional network device naming scheme is unpredictable. One network device name can be assigned to another device in the next boot. To solve that, `Predictable Network Interface Device Names` is introduced which incorportes more device details when assigning names to network interfaces
+* Firmware or BIOS provided index numbers, e.g. eno1
+* Firmware or BIOS provided PCI Express hotplug slot index numbers, e.g. ens1
+* Physical/geographical location of hw connection, e.g. enp2s0
+* MAC address, e.g. enx7837d1ea46da
+* old classic method, e.g. eth0
+
+#### NIC
+Network configurations applied by `ip` or `ifconfig` tools  are _non-persistent_, in other words, this configuration is lost after reboot. To make it persistent, network interface configuration files, NIC, need to be used of which format depends on distro
+* RedHat: /etc/sysconfig/network
+* Debian: /etc/network/interfaces
+* SUSE: /etc/sysconfig/network
+
+#### Network Manager
+`Network Manager` is a `systemd` service that manages network configurations. It generates the ultimate NIC file and by doing so it saves manual editing of NIC files. It is also used to list wireless networks in range, enter network passwords, turn devices on/off etc. It comes in several client interfaces.
+
+* GUI offered by Desktop Environment. 
+* nmtui: text user interface (on terminal) for network manager.
+* nmcli: CLI for network manager.
+
+nmtui and nmcli are distro independent and abstract differences in NICs.
+
+```nmcli device wifi list                                   # list wifi networks in range```
+```nmcli device wifi connect <ssid>                         # connect to network```
+```nmcli connection show                                    # list connection profiles```
+```nmcli connection show <ssid>                             # show details of ssid```
+```nmcli con modify <ssid> +ipv4.addreses 192.168.1.10      # configure static IP```
+
+#### Routing
+For every TCP/IP packet being transmitted, network interfaces, sometimes, cannot transmit packets directly to the destination and need to forward to intermediate routers. A routing table is here to help find the next stop of a packet. This is done by comparing routing entries in the table with the final destination address of the packet. Packet is forwarded to the gateway address of the routing entry found, Some routing entries might not have a gateway which is indicated with the absence of `G` flag. To see current routing table
+
+```$ ip route show```
+
+A typical routing entry contains
+
+Column  | Desc
+===     | ===
+destination | destination network address
+gateway | address of the router to forward datagram to
+genmask | destination network mask
+iface   | network device to send datagram through 
+flag    | e.g. U for up, G for network has gateway
+metric  | priority in case multiple matches are found
+
+##### Default route
+Fallback route chosen in case destination address doesn't match any entry in the routing table. 
+It can be obtained dynamically using DHCP or configured manually via `nmcli` or editing NIC. To set it in the NIC file, `gateway` keywork is used in the configuration.
+
+##### Static routes
+Static routing entries can be added to the table via `ip` command. By default, local network address is setup as a static route so that peer to peer requests can be made in the LAN without involving the default gateway.
+```sudo ip route add <args>```
 
 #### DNS
 
-* `/etc/hosts` is the place for static name resolutions. If a name resolution cannot be done here, a DNS resolver gets queried whose addresses are at `/etc/resolv.conf`. NetworkManager can edit this file invoking DHCP on the primary network interface.
+* `/etc/hosts` is the place for static name resolutions, a local host database. If a name resolution cannot be done here, a DNS resolver gets queried whose addresses are at `/etc/resolv.conf`. NetworkManager can edit this file invoking DHCP on the primary network interface.
 
 * `/etc/hosts.allow` and `/etc/hosts.deny` contain access control rules for TCP wrappers. A rule is related to clients (based on ip or domain name) can access what service (sshd, ftpd, etc.) on the system.
 
 ##### Diagnostic tools
 
-`traceroute` traces the path of a request along its way to the destination. It shows router packets flow.
-`mtr` combines `ping` and `traceroute` commands, sends requests constantly and continuously updates display like top.
-
+`traceroute` traces the path of a request along its way to the final destination. It shows how router packets flow.
+`mtr` combines `ping` and `traceroute` commands. It constantly sends requests and continuously updates trace display like `top`.
 
 `iptables` complex tool to configure firewall rules.
 `ufw` (uncomplicated firewall) is a front-end for `iptables` to assist and comes with Ubuntu.
