@@ -884,3 +884,7 @@ ip link set eth0 down   # bring eth0 down
 `traceroute` traces the path of a request along its way to the destination. It shows router packets flow.
 `mtr` combines `ping` and `traceroute` commands, sends requests constantly and continuously updates display like top.
 
+
+`iptables` complex tool to configure firewall rules.
+`ufw` (uncomplicated firewall) is a front-end for `iptables` to assist and comes with Ubuntu.
+`firewalld` is another front-end for `iptables` to assist.
