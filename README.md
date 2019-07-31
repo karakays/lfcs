@@ -955,16 +955,16 @@ Static routing entries can be added to the table via `ip` command. By default, l
 ### XXXVI. Firewalls
 Firewalls are  based on packet filtering for both incoming and outgoing network traffic. It applies a set of rules to each packet and consequently, a packet is accepted, rejected, altered or redirected etc. Common tools are
 
-* iptables
-* firewall-cmd interface to firewalld
-* ufw
+* `iptables` complex tool to configure firewall rules.
+* `ufw` (uncomplicated firewall) is a front-end for `iptables` to assist and comes with Ubuntu.
+* `firewalld` is another front-end for `iptables` to assist.
 
 #### firewalld
 `firewalld` is the modern firewall service and replaces `iptables`.
 
 #### Zones
 
-A `zone` defines a level of trust and known behavior for incoming/outgoing traffic. Each network interface belongs to a zone. Rules can be applied in runtime or in a permanent way. Some of the zones are
+A `zone` defines a level of trust and a known profile applied for incoming/outgoing traffic. Each network interface belongs to a zone. Rules can be applied in runtime or in a permanent way. Some of the zones are
 
 * drop; incoming dropped without a reply. only outgoing permitted.
 * block: incoming rejected
