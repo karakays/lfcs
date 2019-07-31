@@ -834,6 +834,86 @@ Create a software raid device
 #### Hot spare
 A hot spare is used as a failover mechanism. It is active in the cluster and is switched into operation when a disk fails. A hot spare can be created when creating RAID array or later on via the `mdadm`.
 
+### XXX. User account management
+
+Each user account has a corresponding entry line in `/etc/passwd` that holds basic user attributes like
+
+* username, uid, gid
+* home, default shell
+Each field is separated with a colon.
+
+```karakays:x:1000:1000:Selcuk Karakayali,,,:/home/karakays:/bin/bash```
+
+#### `/etc/shadow`
+Password field contains hashed password. It's left with `x` if `/etc/shadow` is used instead. ```/etc/passwd``` has `644` permissions that means anyone can read it. This is because system programs and user apps need to read the information in that file. On the other hand, `/etc/shadow` has `400` permissions. `/etc/shadow``` is preferred way to keep passwords as it prevents anyone to read hashed passwords.
+
+`/etc/shadow` contains one entry line for each user and contains password-related attributes with colon separated fields
+
+```acme:$6$WWFDxsbs$7tFoaoCdErof8VyvHF9vO9kMAIeHk9FTc790VDZpUevYTh4/hcA/IvX.YGkZJU/Qm0:18100:0:99999:7:::```
+
+* username
+* hashed password: `$6$` followed by 8 chars salt, followed by `$` and sha512'ed password
+* lastchange of passwd
+* mindays/maxdays before it can be changed
+* expire date when account is disabled etc.
+
+Passwords can be changed with `passwd`. `root` can change any password.
+
+##### `chage` password aging
+`chage` is used to edit password expiry attributes like min/max days, expire date, warning days, last day. Only root can change these attributes.
+
+##### Creating/deleting/editing user accounts
+
+Create new user account for username dexter
+
+```sudo useradd dexter```
+
+whereas with following defaults for new user
+
+* next available uid assigned to dexter. By convention, any account id less than `1000` is considered special and is a system account.
+* a group `dexter` created where gid=uid and assigned as primary group
+* home directory created and owned
+* `/bin/bash` set as default shell
+* `/etc/skel` contents copied to home as default dotfiles
+
+Any attribute can be overridden with options to the `useradd` command. System-wide login configurations are hold in `/etc/login.defs`.
+
+Remove a user and all its references in `/etc/shadow`, `/etc/passwd`, `/etc/group` etc.
+
+```sudo userdel dexter```
+
+`/home/dexter` is kept by default.
+
+Edit user attributes with using the options to `usermod` command. To lock the user account
+
+```sudo usermod -L dexter```
+
+Unlocking is done with `-U` option.
+
+##### System accounts
+
+System accounts are locked by default to prevent login. They can only run programs. Default shell is set to `/sbin/nologin` which prevents user to login.
+```bin:x:2:2:bin:/bin:/usr/sbin/nologin```
+
+#### Restricted account
+
+A restriced shell is a tightly controlled shell. It can be invoked with `r` option.
+
+`bash -r`
+
+It prevents a user to
+
+* cd directories
+* changing certain env variables
+* specify an absolute path in any command
+* io redirecting
+
+A restricted account is set to use restricted shell `/bin/rbash` in `/etc/passwd` whereas `/bin/rbash` is a symlink to `/bin/bash`. This is a workaround as flags may not be specified in `/etc/passwd`.
+
+##### root account
+
+`root` account should only be used when absolutely necessary and never be used as a regular account. `sudo` makes an audit trail of any root access. It should be prohibited to login directly to root account.
+
 ### XXXIV. Network addresses
 
 #### IPv4
