@@ -910,10 +910,10 @@ Network configurations applied by `ip` or `ifconfig` tools  are _non-persistent_
 
 nmtui and nmcli are distro independent and abstract differences in NICs.
 
-```nmcli device wifi list                                   # list wifi networks in range```
-```nmcli device wifi connect <ssid>                         # connect to network```
-```nmcli connection show                                    # list connection profiles```
-```nmcli connection show <ssid>                             # show details of ssid```
+```nmcli device wifi list                                   # list wifi networks in range```  
+```nmcli device wifi connect <ssid>                         # connect to network```  
+```nmcli connection show                                    # list connection profiles```  
+```nmcli connection show <ssid>                             # show details of ssid```  
 ```nmcli con modify <ssid> +ipv4.addreses 192.168.1.10      # configure static IP```
 
 #### Routing
@@ -938,6 +938,7 @@ It can be obtained dynamically using DHCP or configured manually via `nmcli` or 
 
 ##### Static routes
 Static routing entries can be added to the table via `ip` command. By default, local network address is setup as a static route so that peer to peer requests can be made in the LAN without involving the default gateway.
+
 ```sudo ip route add <args>```
 
 #### DNS
@@ -950,3 +951,52 @@ Static routing entries can be added to the table via `ip` command. By default, l
 
 `traceroute` traces the path of a request along its way to the final destination. It shows how router packets flow.
 `mtr` combines `ping` and `traceroute` commands. It constantly sends requests and continuously updates trace display like `top`.
+
+### XXXVI. Firewalls
+Firewalls are  based on packet filtering for both incoming and outgoing network traffic. It applies a set of rules to each packet and consequently, a packet is accepted, rejected, altered or redirected etc. Common tools are
+
+* iptables
+* firewall-cmd interface to firewalld
+* ufw
+
+#### firewalld
+`firewalld` is the modern firewall service and replaces `iptables`.
+
+#### Zones
+
+A `zone` defines a level of trust and known behavior for incoming/outgoing traffic. Each network interface belongs to a zone. Rules can be applied in runtime or in a permanent way. Some of the zones are
+
+* drop; incoming dropped without a reply. only outgoing permitted.
+* block: incoming rejected
+* public: don't trust any host, only selected connections allowed. _default_ zone on all interfaces.
+* external
+* dmz: some services are allowed to be used publicly. particular incoming allowed.
+* work
+* home
+* internal
+* trusted: all connections allowed
+
+Zones can be assigned in three different ways
+* to whole network interface
+* to a source network address
+* to a service and port
+
+To assign a network interface to a zone, permanently
+```firewall-cmd --permanent --zone=internal --change-interface=en01```
+
+##### Source management
+
+Assign a zone to a source network address. 
+
+To assign a network (all hosts in the network) to a zone, permanently
+```firewall-cmd --permanent --zone=trusted --add-source=192.168.1.0/24```
+
+##### Service and port management
+
+Assign a zone to system service (http, dhcp, ftp, dns, mysql etc.)
+
+```firewall-cmd --permanent --zone=home --add-service=dhcp```
+
+Assign a zone to a listening port
+
+```firewall-cmd --permanent --zone=home --add-port=21/tcp```
