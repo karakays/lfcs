@@ -836,7 +836,7 @@ A hot spare is used as a failover mechanism. It is active in the cluster and is 
 
 ### XXX. User account management
 
-Each user account has a corresponding entry line in `/etc/passwd` that holds basic user attributes like
+Users are defined in `/etc/passwd`. Each user account has its own entry in `/etc/passwd` that holds basic user attributes like
 
 * username, uid, gid
 * home, default shell
@@ -957,6 +957,102 @@ config  | ssh client config
 #### Remote graphical login
 
 VNC (virtual network computing) is to login remotely with full graphical desktop. `tigervnc` is an implementation.
+
+### XXXI. Group management
+
+Groups are defined in `/etc/group`. It contains group name, group password, gid and comma-separated list of users.
+
+```groupname:passwd:GID:user1,user2,...```
+
+Group identifiers between 0 and 99 are reserved for system groups. Values between 100 and `GID_MIN` are for special. A user is not listed in the members if this is its primary group.
+
+Groups are managed with following tools. They basically modify `/etc/groups`
+
+* groupadd
+* groupdel
+* groupmod
+
+To modify groups of `dexter`, use the following
+
+```usermod -G staff,group1,group2 dexter```
+
+To set user's primary group when creating a new user
+
+```useradd -g primary-group dexter```
+
+#### User Private Groups
+
+A user private group, UPG, is a group where
+
+* GID = UID, group name = user name
+* UPG is set as the user's primary group  
+
+By default, `useradd` creates a UPG for the new user.
+
+#### Memberships
+
+Every user has one primary group, however it also belong from 0 to 15 secondary groups. To list the groups `dexter` belongs to 
+
+```groups dexter```
+
+### XXXII. File permissions
+
+Any request to kernel to access a file requires authorization - whether calling user has file permission for that action. File permissions are checked in the following order
+1. owner
+2. if not owner, check group
+3. otherwise, others
+
+#### chmod
+
+Multiple permissions can be specified separated with comma
+
+```chmod ug+w,o+r somefile```
+
+Setting permissions with octal digits require to set whole permissions. In contrast to this, symbolic form lets you specify only what's needs to be changed, not more.
+
+How permissions work for a directory?
+
+* `r` bit needed to access directory
+* `x` bit needed to list directory contents. otherwise, each content item shown with `?` marks.
+* `rx` bits neded to properly list the directory - first access and then list
+* 'wx" bits neded to create a file in the directory
+
+#### umask
+
+Default permissions at kernel level for newly files are
+
+* 0666 for file
+* 0777 for directories
+
+`umask` is a global permission mask that is applied to newly created files and directories. That means, actual permissions are made up by combining these defaults with the umask value. More precisely, umask's XORed value is ANDed with default permissions. To get current umask value,
+
+```$ umask```
+```0002```
+
+or to get it in symbolic form
+
+```$ umask -S```
+```u=rwx,g=rwx,o=rx```
+
+```0666 & ~0002 = 0664```
+
+to set the umask,
+
+```umask 0022```
+
+#### Filesystem ACLs
+
+Filesystem permissions can be controlled in a more fine-grained way with ACL than simple users, groups.  Major filesystems support ACL extensions and to enable it, one can use the `acl` option when mounting. To see ACLs of a file
+
+```getfacl file```
+
+To give read and write permission to dexter via ACLs
+
+```setfacl -m u:dexter:rw file```
+
+To remove ACLs for rocky on file
+
+```setfacl -x u:rocky file```
 
 ### XXXIV. Network addresses
 
