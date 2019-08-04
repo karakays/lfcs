@@ -975,8 +975,9 @@ A restricted account is set to use restricted shell `/bin/rbash` in `/etc/passwd
 #### SSH
 
 Configurations
-            |
-===         | ===
+
+file        | purpose
+---         | ---
 id_rsa.pub  | default public key
 id_rsa      | default private ky
 authorized_keys | list of identities who can login in this host
@@ -1109,7 +1110,7 @@ Modules are stacked together and all together they build up the authentication p
 ##### type or module interface
 Specifies the module interface to be used
 
-|
+type | desc
 --- | ---
 `auth` | Instruct the app to authenticate the user
 `account`  | Checks users account attributes such as if account has expired or authn allowed at that time
@@ -1119,7 +1120,7 @@ Specifies the module interface to be used
 ##### control
 Controls how success of failure of current module in the stacks affects overall process
 
-            |
+control | desc
 ---         | ---
 `required` | Module must pass but on failure it doesn't fail immediately and other modules continued
 `requisite` | same as `required` but failes immediately on failure and terminates authentication
@@ -1149,8 +1150,9 @@ Reserved addresses:
 - 0.0.0.0 denotes unknown address of the host. DHCP uses this address when communicating to server.
 
 IPv4 address classes:
+
 class |  most significant octet range | network portion in bits | netmask
---- | ---                             | ---                     | 
+--- | ---                             | ---                     | ---
 A   | 1-127                           | 8                       | x.0.0.0
 B   | 128-191                         | 16                      | x.x.0.0
 C   | 192-223                         | 24                      | x.x.x.0
