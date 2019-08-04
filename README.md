@@ -22,7 +22,8 @@
 [ XXIV. RAID ](#xxiv-raid)  
 [ XXX. User account management ](#xxx-user-account-management)  
 [ XXXI. Group management ](#xxxi-group-management)  
-[ XXXII. File permissions ](xxxii-file-permissions)  
+[ XXXII. File permissions ](#xxxii-file-permissions)  
+[ XXXIII. PAM ](#xxxiii-pam)  
 [ XXXIV. Network addresses ](#xxxiv-network-addresses)  
 [ XXXV. Network devs and configuration ](#xxxv-network-devs-and-configuration)  
 [ XXXVI. Firewalls ](#xxxvi-firewalls)  
@@ -866,7 +867,7 @@ A hot spare is used as a failover mechanism. It is active in the cluster and is 
 
 ### XXX. User account management
 
-Users are defined in `/etc/passwd`. Each user account has its own entry in `/etc/passwd` that holds basic user attributes like
+```/etc/passwd` is the local user directory. Users are defined in `/etc/passwd`and each account has its own entry in `/etc/passwd` that holds basic user attributes like
 
 * username, uid, gid
 * home, default shell
@@ -1083,6 +1084,54 @@ To give read and write permission to dexter via ACLs
 To remove ACLs for rocky on file
 
 ```setfacl -x u:rocky file```
+
+### XXXIII. PAM
+
+Pluggable Authentication Modules provides authentication policies in a uniformed and modular way for various applications. Historically, applications such as ssh, su, login did authentication management independently of each other.  
+
+#### PAM configuration
+PAM configuration files are found in `/etc/pam.d`. Each file corresponds to a service that relies on PAM for authentication, e.g.
+* sudo
+* su
+* login
+* passwd
+* sshd
+* reboot etc.
+
+A PAM-aware application invokes `libpam` which in turn checks these configuration files to apply rules and might invoke further modules.
+
+Each line in a PAM configuration specifies a rule that is made of
+
+`type` `control` `module-path` `module-args`
+
+Modules are stacked together and all together they build up the authentication process. Modules are executed in the order and the result of each module (either success or failure) affects overall authentication.
+
+##### type or module interface
+Specifies the module interface to be used
+
+|
+--- | ---
+`auth` | Instruct the app to authenticate the user
+`account`  | Checks users account attributes such as if account has expired or authn allowed at that time
+`password` | Used for changing passwords
+`session` | functions before and after session is established
+
+##### control
+Controls how success of failure of current module in the stacks affects overall process
+
+            |
+---         | ---
+`required` | Module must pass but on failure it doesn't fail immediately and other modules continued
+`requisite` | same as `required` but failes immediately on failure and terminates authentication
+`optional` | module not required
+`sufficient` | if module succeeds, not subsequent modules in the stack executed
+
+##### module-path and module args
+path of the library (*.so file) to invoke and with its arguments
+
+#### LDAP
+
+PAM can be configured to work with an LDAP server. LDAP provides a centralized identity directory over the network.
 
 ### XXXIV. Network addresses
 
