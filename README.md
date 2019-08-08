@@ -1178,7 +1178,7 @@ Network devices are not associated with a device file, they are known by names a
 ```ip [ options] object <command>``` where object can be
 
 object      | function
-===         | ===
+---         | ---
 address     | IPv4 or v6 address
 link        | network devices (interface)
 route       | routing table entries
@@ -1225,7 +1225,7 @@ For every TCP/IP packet being transmitted, network interfaces, sometimes, cannot
 A typical routing entry contains
 
 Column  | Desc
-===     | ===
+---     | ---
 destination | destination network address
 gateway | address of the router to forward datagram to
 genmask | destination network mask
