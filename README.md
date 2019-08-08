@@ -20,6 +20,7 @@
 [ XXII. Encrypting disks ](#xxii-encrypting-disks)  
 [ XXIII. LVM ](#xxiii-lvm)  
 [ XXIV. RAID ](#xxiv-raid)  
+[ XXV. Kernel services and configuration ](#xxv-kernel-services-and-configuration)  
 [ XXX. User account management ](#xxx-user-account-management)  
 [ XXXI. Group management ](#xxxi-group-management)  
 [ XXXII. File permissions ](#xxxii-file-permissions)  
@@ -864,6 +865,44 @@ Create a software raid device
 
 #### Hot spare
 A hot spare is used as a failover mechanism. It is active in the cluster and is switched into operation when a disk fails. A hot spare can be created when creating RAID array or later on via the `mdadm`.
+
+### XXV. Kernel services and configuration
+
+Linux is the kernel and includes libraries and applications that interact with the system. It manages system resources such as CPU, memory and disk. Kernel makes other periphereal devices available through device drivers.
+
+#### kernel command line
+
+Parameters can be passed to kernel when it boots with kernel command which looks like
+
+```linux /boot/vmlinuz-4-19.0 root=<uuid> ro quiet```
+
+Kernal command line is found in `/boot/grub/grub.cfg` and is here to pass start up options. Any options not understood are are passed to `init`. Available options can be found in `man bootparam`.
+
+* root = root filesystem
+* ro  = mount root read-only
+* quiet = less verbose logging
+* LANG = system language
+
+#### `sysctl`
+`sysctl` is to tune kernel and also system parameters at runtime. Parameters are in key = value format. To list all parameters
+
+`sysctl -a`
+kernel.pid_max = 111
+net.ipv4.forward = 1
+net/ipv4.icmp_echo_ignore_all=0
+vm.swapiness = 30
+
+To get one parameter,
+`sysctl kernel.pid_max`
+
+Each key corresponds to a `pseudofile under` `/proc/sys/key` and parameter value is the file content, e.g. `kernel.pid_max` value can be found in file `/proc/sys/kernel/pid_max`.
+To set a parameter, either write to corresponding file or
+
+`sudo sysctl net.ipv4.forward=1`
+
+`/etc/sysctl.conf` contains parameters that are read and set during boot. To apply current configuration, simply modify some variables if need be and apply
+
+`sudo sysctl -p`
 
 ### XXX. User account management
 
