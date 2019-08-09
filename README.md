@@ -21,6 +21,7 @@
 [ XXIII. LVM ](#xxiii-lvm)  
 [ XXIV. RAID ](#xxiv-raid)  
 [ XXV. Kernel services and configuration ](#xxv-kernel-services-and-configuration)  
+[ XXVIII. Virtualization ](#xxviii-virtualization)  
 [ XXX. User account management ](#xxx-user-account-management)  
 [ XXXI. Group management ](#xxxi-group-management)  
 [ XXXII. File permissions ](#xxxii-file-permissions)  
@@ -904,8 +905,48 @@ To set a parameter, either write to corresponding file or
 
 `sudo sysctl -p`
 
-### XXX. User account management
+### XXVIII. Virtualization
 
+Virtualization is about replacement of physical resource by an abstraction layer. In terms of virtualizing an entire OS, it's a virtual machine (VM) running under a hypervisor. A VM is a virtualized instance of an entire OS to create an isolated environment.
+Virtualization is transparent to the applications running in virtual machine and to the outer world.
+
+Virtualization can also be applied to
+* Network - Software Defined Networking.
+* Storage - Network Attached Storage. 
+* Application - Container
+
+Host is the physical OS managing one or more VMs. Guest is the VM that is an instance of a complete OS. Guest shouldn't care what host it's running on.
+
+Emulator is an application running in an OS that appears to another OS or application as a specific hardware. It's a software that replaces hardware constructs, it simulates the behaviour of a HW.
+
+#### Types of virtualization
+
+`Hypervisor`, aka `virtual maachine monitor` is responsible for initiating, managing and terminating guests.
+
+* Hardware virtualization (full virtualization): Guest is not aware it's running in a virtual environment
+* Para-virtualization: Guest is aware it's running in a virtualized environment and is modified to work with it.
+
+Intel (VT) and AMD (AMD-V) virtualization extensions allow hypervisor to run VMs in full virtz.
+
+A hypervisor can be external or internal to the host operating system kernel.
+* external: Third-party programs required such as VMWare, VirtualBox etc.
+* internal: as a kernel module that provides virtualization: KVM 
+
+`libvirt` is the library that provides management of virtual machines, virtual networks, virtual storage. Tools such as
+`virt-manager, `virt-viewer`, `virt-install`, `virsh` use this library.
+
+#### QEMU
+Quick EMulator is hypervisor that also performs CPU hardware emulation. QEMU can be used together with third party hypervisor to boost performance like
+* KVM
+* Xen (KVM-alternative in Debian)vv
+* Oracle VirtualBox
+
+#### KVM
+KVM is the full-virtualization solution for Linux on CPUs with VT or AMD-V support. KVM is a loadable module `kvm.ko` that runs the VMM on one or more CPUs.
+
+![KVM w/ QEMU](https://upload.wikimedia.org/wikipedia/commons/thumb/4/40/Kernel-based_Virtual_Machine.svg/800px-Kernel-based_Virtual_Machine.svg.png)
+
+### XXX. User account management
 ```/etc/passwd` is the local user directory. Users are defined in `/etc/passwd`and each account has its own entry in `/etc/passwd` that holds basic user attributes like
 
 * username, uid, gid
