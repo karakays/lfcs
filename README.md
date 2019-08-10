@@ -21,6 +21,7 @@
 [ XXIII. LVM ](#xxiii-lvm)  
 [ XXIV. RAID ](#xxiv-raid)  
 [ XXV. Kernel services and configuration ](#xxv-kernel-services-and-configuration)  
+[ XXVI. Kernel modules ](#xxvi-kernel-modules)  
 [ XXX. User account management ](#xxx-user-account-management)  
 [ XXXI. Group management ](#xxxi-group-management)  
 [ XXXII. File permissions ](#xxxii-file-permissions)  
@@ -903,6 +904,78 @@ To set a parameter, either write to corresponding file or
 `/etc/sysctl.conf` contains parameters that are read and set during boot. To apply current configuration, simply modify some variables if need be and apply
 
 `sudo sysctl -p`
+
+### XXVI. Kernel modules
+
+Kernel `modules` are facilities that can be loaded or unloaded at runtime and they do not require a system restart to function. Modules are mostly device drivers but also could be a custom network protocol or a filesystem etc. It's responsibility of the distribution to include driver modules for every device that the system needs.
+Once a `module` is loaded, it becomes a fully funcitonal native part of the monolithic kernel, with few restrictions.
+
+#### Module utilities
+
+Modules have `*.ko` file extension and can be found in `/lib/modules/<kernel-version>/`. Modules depend on a specific kernel version during build time. A modules can be used by one or more other modules.
+
+List loaded modules also displaying # of processes using the module and its dependants,  
+`lsmod`
+
+Load a module directly,  
+`insmod` <modulename>
+
+Unload a module directly,  
+`rmmod` <modulename>
+
+Load or unload a modules with dependency management,
+`modprob <modulename>`
+`modprob -r <modulename>`
+
+Rebuild the module dependency database,  
+`depmod`
+
+Display module details such as version, module dependencies, supported hardwares, what parameters can be supploed during loading etc.
+`modinfo` <modulename>
+
+#### Module utilities
+
+Modules can be loaded specifying parameters
+
+`modprobe e1000e debug=2 copybreak=256`
+
+`/etc/modprobe.d/` contains default parameters applied when loading a module with `modprob`.
+
+
+### XXVII. Devices and `udev`
+`udev` is used by the system to discover hardware and peripheral devices (when they are plugged-in) during boot or runtime. Based on the discovery, `device nodes` (/dev/*) are created.
+
+#### Device nodes
+Character and block devices have filesystem entries associated with them which are called `device nodes`. As an example, a block disk device has a file in `/dev/sda`. Programss read and write over device nodes through system calls `open()`, `read()`, `write()` to communicate with the hardware.There is an exception. Network devices do not have `device node`s.
+
+![Network devices have no device nodes](https://lms.quickstart.com/custom/799658/images/device_node_small.png)
+
+#### Major and minor numbers
+Major and minor numbers are used to identify the device driver that a `device node` is using. They appear in `ls` output where file size would show for normal files. Below, `8, 0` is the major/minor versions.
+
+`$ ll /dev/sda`
+`brw-rw---- 1 root 8, 0 Aug  6 20:46 /dev/sda`
+
+#### `udev`
+Managing all device nodes in `/dev` had become difficult as Linux evolved. Distributions had to create all kinds of device nodes by default (most of them were not used at all) because they can never be sure which hw would be present on system. This resulted around 20k device nodes and subdirectories during kernel version 2.4 series.
+
+`udev` method creates device nodes on demand which prevents to have a ton of device nodes that never be used. Upon kernel initial boot, `/dev/` directory is empty. `u` stands for user indicating `device node` operations done in user space. 
+
+#### Discovering devices
+`udev` runs as a daemon and monitors `netlink` socket for device events. If a device is plugged-in or removed, `uevent` sends a message and `udev` takes appropriate action like
+* device node naming
+* device node creation
+* file permissions
+* initialize and make device available
+
+#### `udev` rules
+Main configuration file is `/etc/udev/udev.conf`. It contains details such as where to create device nodes, default permissions, ownership etc. Rules are located in `/etc/udev/rules.d/` and have `*.rules` extension. A rule file can have multiple rule statements in lines. The rule format is as follows where first part tries to match tries the device and second part does assignments key-value assignments. If no match found, then no rule is executed.
+
+`<match>==<value> [, ...] <assignment>=<value> [, ...]`
+
+`a sample udev rule is here`
+
+
 
 ### XXX. User account management
 
