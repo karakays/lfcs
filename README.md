@@ -22,8 +22,9 @@
 [ XXIV. RAID ](#xxiv-raid)  
 [ XXV. Kernel services and configuration ](#xxv-kernel-services-and-configuration)  
 [ XXVI. Kernel modules ](#xxvi-kernel-modules)  
-[ XXVII. Devices and `udev`](#xxvii-devices-and-`udev`)  
+[ XXVII. Devices and `udev`](#xxvii-devices-and-udev)  
 [ XXVIII. Virtualization ](#xxviii-virtualization)   
+[ XXIX. Containers ](#xxix-containers)   
 [ XXX. User account management ](#xxx-user-account-management)  
 [ XXXI. Group management ](#xxxi-group-management)  
 [ XXXII. File permissions ](#xxxii-file-permissions)  
@@ -907,7 +908,6 @@ To set a parameter, either write to corresponding file or
 
 `sudo sysctl -p`
 
-<<<<<<< HEAD
 ### XXVI. Kernel modules
 
 Kernel `modules` are facilities that can be loaded or unloaded at runtime and they do not require a system restart to function. Modules are mostly device drivers but also could be a custom network protocol or a filesystem etc. It's responsibility of the distribution to include driver modules for every device that the system needs.
@@ -991,18 +991,18 @@ Host is the physical OS managing one or more VMs. Guest is the VM that is an ins
 
 Emulator is an application running in an OS that appears to another OS or application as a specific hardware. It's a software that replaces hardware constructs, it simulates the behaviour of a HW.
 
+`Hypervisor`, aka `virtual maachine monitor` is responsible for initiating, managing and terminating guests. A VM is a self-container computer packed into a single file. But something needs to run that file. It sits between the physical hardware and VM to virtualize the hardware.
+
 #### Types of virtualization
 
-`Hypervisor`, aka `virtual maachine monitor` is responsible for initiating, managing and terminating guests.
-
 * Hardware virtualization (full virtualization): Guest is not aware it's running in a virtual environment
-* Para-virtualization: Guest is aware it's running in a virtualized environment and is modified to work with it.
+* Para-virtualization: Guest is aware it's running in a virtualized environment and is modified to work with it. There is no full-fledged hardware virtualization.
 
 Intel (VT) and AMD (AMD-V) virtualization extensions allow hypervisor to run VMs in full virtz.
 
 A hypervisor can be external or internal to the host operating system kernel.
-* external: Third-party programs required such as VMWare, VirtualBox etc.
-* internal: as a kernel module that provides virtualization: KVM 
+* type i - hosted hypervisor: VM have no direct accesss to hardware, it goes through host system which lowers VM performance. Third-party programs required such as VMWare, VirtualBox etc.
+* type ii - bare-metal: VM can access hardware directly so better performance. KVM runs as a kernel module that provides virtualization.
 
 `libvirt` is the library that provides management of virtual machines, virtual networks, virtual storage. Tools such as
 `virt-manager, `virt-viewer`, `virt-install`, `virsh` use this library.
@@ -1017,6 +1017,32 @@ Quick EMulator is hypervisor that also performs CPU hardware emulation. QEMU can
 KVM is the full-virtualization solution for Linux on CPUs with VT or AMD-V support. KVM is a loadable module `kvm.ko` that runs the VMM on one or more CPUs.
 
 ![KVM w/ QEMU](https://upload.wikimedia.org/wikipedia/commons/thumb/4/40/Kernel-based_Virtual_Machine.svg/800px-Kernel-based_Virtual_Machine.svg.png)
+
+### XXIX. Containers
+
+A container narrows the scope of virtualization and is at the OS-level virtualization. Instead of virtualizing the entire OS, application runtime environment is abstracted.
+
+A container sits on top of physical server and the host OS. Multiple containers share the same host OS.
+
+[VM architecture](https://nickjanetakis.com/assets/blog/virtual-machine-architecture-e6bcc9d42a12a12da38e92ba5a7ddef21e6bda269abc580a84ece64ac189d2b2.jpg)
+
+[Docker architecture](https://nickjanetakis.com/assets/blog/docker-architecture-2cf6d2f4a7d8f04df5576d06c46f02435d8fae339063f58a621a42f24255602a.jpg)
+
+#### Container vs VM
+
+* VM is a virtual copy of both OS and hardware. It takes up a lot of resources.
+* It takes VM minutes to start up.
+* Containers are lightweight because no virtualization is needed as it runs directly on the host OS.
+* It takes container seconds to start up.
+* Containers are portable.
+* VM can run many services and applications. Container runs one application only.
+
+#### Docker
+
+Docker daemon (engine) replaces hypervisor. It ensures each container is isolated from each other and the host OS.
+
+base image, bins, libs and application code are contained altogether in the docker image, all bundled together. `Dockerfile` tells Docker how to build the image. A container is created and started with running a docker image
+```docker run <image>```
 
 ### XXX. User account management
 `/etc/passwd` is the local user directory. Users are defined in `/etc/passwd`and each account has its own entry in `/etc/passwd` that holds basic user attributes like
