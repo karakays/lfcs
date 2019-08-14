@@ -32,6 +32,7 @@
 [ XXXIV. Network addresses ](#xxxiv-network-addresses)  
 [ XXXV. Network devs and configuration ](#xxxv-network-devs-and-configuration)  
 [ XXXVI. Firewalls ](#xxxvi-firewalls)  
+[ XXXVII. System startup and shutdown ](#xxxvii-system-startup-and-shutdown)  
 
 ### II. Filesystem layout
 
@@ -1024,9 +1025,9 @@ A container narrows the scope of virtualization and is at the OS-level virtualiz
 
 A container sits on top of physical server and the host OS. Multiple containers share the same host OS.
 
-[VM architecture](https://nickjanetakis.com/assets/blog/virtual-machine-architecture-e6bcc9d42a12a12da38e92ba5a7ddef21e6bda269abc580a84ece64ac189d2b2.jpg)
+![VM architecture](https://nickjanetakis.com/assets/blog/virtual-machine-architecture-e6bcc9d42a12a12da38e92ba5a7ddef21e6bda269abc580a84ece64ac189d2b2.jpg)
 
-[Docker architecture](https://nickjanetakis.com/assets/blog/docker-architecture-2cf6d2f4a7d8f04df5576d06c46f02435d8fae339063f58a621a42f24255602a.jpg)
+![Docker architecture](https://nickjanetakis.com/assets/blog/docker-architecture-2cf6d2f4a7d8f04df5576d06c46f02435d8fae339063f58a621a42f24255602a.jpg)
 
 #### Container vs VM
 
@@ -1479,3 +1480,39 @@ Assign a zone to system service (http, dhcp, ftp, dns, mysql etc.)
 Assign a zone to a listening port
 
 ```firewall-cmd --permanent --zone=home --add-port=21/tcp```
+
+### XXXVII. System startup and shutdown
+
+Basic steps for a boot sequence are:
+
+* Machine's boot firmware loads and looks up for bootloaders. UEFI compatible bootloaders are located in `/boot/efi/*.efi`. 
+    - provided by computer vendor
+    - initial hardware checks
+* Bootloader loads kernel image into memory and runs it. Kernel path is specified in `grub.cfg`.
+    - Bootloader uses hardware firmware to access the disk directly because kernel is not loaded yet
+* kernel does hardware checks, get access to peripheral devices, mounts `root` and starts `init` process.
+* `init` sets the rest of the system in motion.
+
+#### Bootloaders
+
+##### `GRUB` GR Unified Bootloader.
+* can boot multiple OS
+* has commandline interface
+* network-based diskless booting
+
+##### Das U-Boot
+* most popular for embedded systems
+
+Default configuration for services can be found in `/etc/default` but it can be overridden in the ???
+
+#### Shutdown
+
+`shutdown` is used to bring the system down gracefully and optionally sending a wall message to all logged-in users.  Shutdown modes are
+* halt: put it in sleep mode and leaves it powered on
+* poweroff: power-off the machine
+* reboot
+
+`shutdown -h <time>`            # shutdown in <time>
+`shutdown -r now`               # reboot now
+
+`reboot`, `halt` and `poweroff` commands are legacy.
