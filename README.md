@@ -947,10 +947,10 @@ Modules can be loaded specifying parameters
 `/etc/modprobe.d/` contains default parameters applied when loading a module with `modprob`.
 
 ### XXVII. Devices and `udev`
-`udev` is used by the system to discover hardware and peripheral devices (when they are plugged-in) during boot or runtime. Based on the discovery, `device nodes` (/dev/*) are created.
+`udev` is used by the system to discover hardware and peripheral devices (when they are plugged-in) during boot or runtime. Based on the discovery, `device nodes` (/dev/\*) are created.
 
 #### Device nodes
-Character and block devices have filesystem entries associated with them which are called `device nodes`. As an example, a block disk device has a file in `/dev/sda`. Programss read and write over device nodes through system calls `open()`, `read()`, `write()` to communicate with the hardware.There is an exception. Network devices do not have `device node`s.
+Character and block devices have filesystem entries associated with them which are called `device nodes`. As an example, a block disk device has a file in `/dev/sda`. Programs read and write over device nodes through system calls `open()`, `read()`, `write()` to communicate with the hardware.There is an exception. Network devices do not have `device node`s.
 
 ![Network devices have no device nodes](https://lms.quickstart.com/custom/799658/images/device_node_small.png)
 
@@ -963,7 +963,7 @@ Major and minor numbers are used to identify the device driver that a `device no
 #### `udev`
 Managing all device nodes in `/dev` had become difficult as Linux evolved. Distributions had to create all kinds of device nodes by default (most of them were not used at all) because they can never be sure which hw would be present on system. This resulted around 20k device nodes and subdirectories during kernel version 2.4 series.
 
-`udev` method creates device nodes on demand which prevents to have a ton of device nodes that never be used. Upon kernel initial boot, `/dev/` directory is empty. `u` stands for user indicating `device node` operations done in user space. 
+`udev` method creates device nodes on demand which prevents to have a ton of device nodes that never be used. Upon kernel initial boot, `/dev/` directory is empty. `initramfs` image contains preliminary devices nodes. `u` stands for user indicating `device node` operations done in user space. 
 
 #### Discovering devices
 `udev` runs as a daemon and monitors `netlink` socket for device events. If a device is plugged-in or removed, `uevent` sends a message and `udev` takes appropriate action like
@@ -973,11 +973,13 @@ Managing all device nodes in `/dev` had become difficult as Linux evolved. Distr
 * initialize and make device available
 
 #### `udev` rules
-Main configuration file is `/etc/udev/udev.conf`. It contains details such as where to create device nodes, default permissions, ownership etc. Rules are located in `/etc/udev/rules.d/` and have `*.rules` extension. A rule file can have multiple rule statements in lines. The rule format is as follows where first part tries to match tries the device and second part does assignments key-value assignments. If no match found, then no rule is executed.
+Main configuration file is `/etc/udev/udev.conf`. It contains details such as where to create device nodes, default permissions, ownership etc. Rules are located in `/etc/udev/rules.d/` and have `*.rules` extension. A rule file can have multiple rule statements in lines. The rule format is as follows  
 
 `<match>==<value> [, ...] <assignment>=<value> [, ...]`
 
-`a sample udev rule is here`
+where first part is of one or more match pairs with `==` to match a device and second part is key -value assignments applied to device node. If no match found, then no rule is executed. A rule which matches `USB` devices by vendor with id 0781 and applies some assignments.  
+
+```SUBSYSTEM=="usb", ATTR={idVendor}=="0781", SYMLINK+="myusb", MODE="0666"```
 
 ### XXVIII. Virtualization
 
