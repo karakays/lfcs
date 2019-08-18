@@ -248,61 +248,65 @@ $ sudo apt-get upgrade                  # apply all available updates to all pkg
 
 ### XI. System Monitoring
 
-##### Monitoring tools
+#### Monitoring tools
 
 Many monitoring tools make use of `/proc` and `/sys` pseudo-filesystems.
 
-* Process/load monitoring
+##### Process/load monitoring
 
---- | --- |
+tool | monitors
+--- | ---
 top, ps, pstree | processes
 uptime | uptime and load
 mpstat | multiprocessor usage
 strace | system calls tracing
 
-* Memory/IO monitoring
+##### Memory/IO monitoring
 
+tool | monitors
 --- | --- |
 free | brief memory usage
 vmstat | detailed memory and block io usge
 pmap | process memory map
 iostat | cpu/io stats
 
-* network
+##### Network
 
---- | --- |
+tool | monitors
+--- | ---
 netstat | 
 iptraf | ?
 
-##### System logging
+#### System logging
 
 Important log files are kept under `/var/log/`. System-wide logging is managed by `syslogd` daemon. It collects logs from various services and the kernel and stores them under `/var/log/syslog`.
 
---- | --- |
+log file | purpose
+--- | ---
 boot.log | system boot messages
 `/var/log/kern.log` | kernel only logs, read with `dmesg`
 `/var/log/syslog` | logs everything (services and kernel)
 `/var/log/messages` | general logs (info, warn and notice levels)
 `/var/log/auth.log`  |  security logging (authn, pam, sudo etc.)
 
-* /proc/ and /sys/ are pseudo-filesystems and contain information about the system state.
+/proc/ and /sys/ are pseudo-filesystems and contain information about the system state.
 
-##### /proc/
+#### /proc/
 * Current state of each process running: child processes, memory usage ...
 * /proc/interrupts contain statistics on interrupts
-- how many times an interrupt type was handled by which CPU?
+    - how many times an interrupt type was handled by which CPU?
 * /proc/meminfo: meminfo 
 * /proc/sys/ contain tunable system parameters in plain text files
-- /proc/sys/kernel: kernel paramters
-- /proc/sys/vm: virtual memory paramters
+    - /proc/sys/kernel: kernel paramters
+    - /proc/sys/vm: virtual memory paramters
 
 Kernel parameters can be edited directly or set with `sysctl`.
 
-##### /sys/
+#### /sys/
 aka sysfs. Provides unified information on device and drivers of various types, unified device model. Much of the hw information moved from /proc to /sys.
 `/dev` vs `/sys`: /dev contains device nodes to access the devices themselves whereas /sys contains device information as powered on, vendor, model, bus etc.
 
-##### SAR
+#### SAR
 System activity reporter for humans. Report is made up from the data that is collected by SADC in /var/log/sa periodically. Report can contain about
 - IO, paging, network, per CPU, swap and memory, context switching etc.
 
