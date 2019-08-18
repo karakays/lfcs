@@ -34,6 +34,7 @@
 [ XXXVI. Firewalls ](#xxxvi-firewalls)  
 [ XXXVII. System startup and shutdown ](#xxxvii-system-startup-and-shutdown)  
 [ XXXVIII. GRUB ](#xxxviii-grub)  
+[ XXXIX. `SysVinit`, `upstart` and `systemd`](#xxxix-sysvinit-upstart-and-systemd)
 
 ### II. Filesystem layout
 
@@ -164,8 +165,9 @@ SIGPIPE | Terminate | Broken pipe; socket closed
 
 `killall` sends signals to process(es) by name or user given.
 `pkill` sends signals to processes by filtering by name or user.
-`pgrep` is synopsis. Filters by name, owner, parent, time.
-pgrep -u root java  # list java processes owned by root
+`pgrep` is synopsis. Filters by pattern and other options like owner, parent, time.
+`pgrep [options] pattern`
+`pgrep -u root java  # list java processes owned by root`
 
 
 ### V. Package managers
@@ -248,15 +250,17 @@ $ sudo apt-get upgrade                  # apply all available updates to all pkg
 
 ##### Monitoring tools
 
-* process/load
+Many monitoring tools make use of `/proc` and `/sys` pseudo-filesystems.
+
+* Process/load monitoring
 
 --- | --- |
 top, ps, pstree | processes
-uptime | load
+uptime | uptime and load
 mpstat | multiprocessor usage
 strace | system calls tracing
 
-* memory/io
+* Memory/IO monitoring
 
 --- | --- |
 free | brief memory usage
@@ -272,12 +276,14 @@ iptraf | ?
 
 ##### System logging
 
-Important log files in `/var/log/`
+Important log files are kept under `/var/log/`. System-wide logging is managed by `syslogd` daemon. It collects logs from various services and the kernel and stores them under `/var/log/syslog`.
+
 --- | --- |
 boot.log | system boot messages
-dmesg   | kernel messages
-syslog  | all important system messages
-security  |  security logging
+`/var/log/kern.log` | kernel only logs, read with `dmesg`
+`/var/log/syslog` | logs everything (services and kernel)
+`/var/log/messages` | general logs (info, warn and notice levels)
+`/var/log/auth.log`  |  security logging (authn, pam, sudo etc.)
 
 * /proc/ and /sys/ are pseudo-filesystems and contain information about the system state.
 
@@ -290,17 +296,33 @@ security  |  security logging
 - /proc/sys/kernel: kernel paramters
 - /proc/sys/vm: virtual memory paramters
 
+Kernel parameters can be edited directly or set with `sysctl`.
+
 ##### /sys/
 aka sysfs. Provides unified information on device and drivers of various types, unified device model. Much of the hw information moved from /proc to /sys.
-/dev vs /sys: /dev contains device files to access the devices themselves whereas /sys contains device information as powered on, vendor, model, bus etc.
+`/dev` vs `/sys`: /dev contains device nodes to access the devices themselves whereas /sys contains device information as powered on, vendor, model, bus etc.
 
 ##### SAR
 System activity reporter for humans. Report is made up from the data that is collected by SADC in /var/log/sa periodically. Report can contain about
 - IO, paging, network, per CPU, swap and memory, context switching etc.
 
-$ sudo sar 3 3  # default report 3 times in 3 seconds
+`$ sudo sar 3 3  # CPU usage report 3 times in intervals of 3 seconds`
 
 ### XII. Process Monitoring
+
+##### top
+Interactive process monitoring tool. Press
+* `P` to sort by %CPU
+* `M` to sort by %MEM
+* `N` to sort by PID
+
+CPU usage output
+%Cpu(s): 99.9 us,  0.1 sy,  0.0 ni,  0.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st
+* `us`: %cpu for user processes
+* `sy`: %cpu for kernel processes
+* `ni`: %cpu for niced user processes
+* `id`: time spent idle
+* `wa`: time spent on IO completion
 
 ##### ps
 
@@ -311,20 +333,20 @@ $ sudo sar 3 3  # default report 3 times in 3 seconds
 ###### `ps` output table
 column | description
 --- | ---
-vsz | virtual memory size in KB
-rss | resident set size (physical mem size excl. swap)
-cpu | cpu utilization
-wchan | kernel function where process is sleeping
-tty | attached terminal
-pri | priority
-ni | nice
+VSZ | virtual memory size in KB
+RSS | resident set size (physical mem size excl. swap)
+%CPU | cpu utilization
+WCHAN | kernel function where process is sleeping
+TTY | attached terminal
+PRI | priority
+NI | nice
 comm | executable name only
 args | command with all its args
 
 ###### `ps` options
 
-```ps aux  # interpret options in BSD style grouped```
-```ps -aux # interpret options in UNIX style grouped```
+```ps aux       # interpret options in BSD style grouped```
+```ps -aux      # interpret options in UNIX style grouped```
 
 a: BSD style all processes
 u: output in user-oriented format
@@ -332,6 +354,12 @@ x: remove "must have tty" restriction
 -e: UNIX style all processes
 -o : customize output like ps -o pid,uid,cmd
 -l : long format
+-f : full format
+
+###### `ps` selection
+* `ps -p 2,3,4            # get process with pid=2, 3 or 4`
+* `ps -C bash,java        # list processes with cmdline java`
+* `ps -u root,karakays    # select processes with user id
 
 * `pstree` to visualize process hierarchy by pid or uid.
 pstree [options] [pid,user]
@@ -1545,12 +1573,14 @@ Features
 #### `grub.cfg`
 GRUB configuration is read by `GRUB` during boot and is found in `/boot/grub` or `/boot/grub2` depending on the distribution. It should not be edited directly because is auto-generated by `update-grub` command. It's based on `/etc/default/grub` and `/etc/grub.d`. Any update on these files requires running `update-grub` to reconstruct the `grub.cfg` file.
 
-### XXXIIX. `SysV`, `upstart` and `systemd`
+### XXXIIX. `SysVinit`, `upstart` and `systemd`
 
 #### `init` process
-`/sbin/init` or just `init` is the first process in the user-space and also the last one until system shuts down.
+`/sbin/init` or just `init` is the first process in the user-space with PID=1. It's also the last one until system shuts down. It's considered as the parent of all user processes (except those started by kernel)
 
-Traditionally, all distributions based on UNIX's `SystemV` to manage `init`. `SysVinit` manages the boot process sequentially which results with poor start-up.
+`lrwxrwxrwx 1 root 20 Oct 28  2018 /sbin/init -> /lib/systemd/systemd`
+
+Traditionally, all distributions are based on UNIX's `SystemV` to manage `init`. `SysV` manages the boot process sequentially which results with poor start-up performance.
 
 Modern systems use `upstart` or `systemd` which enables parallel system startup.
 * `upstart` developed by Ubuntu in version 6.10.
@@ -1558,9 +1588,83 @@ Modern systems use `upstart` or `systemd` which enables parallel system startup.
 
 #### `systemd`
 * compatible with `SysVinit`
+    + you can still use `sysvinit` commands because it's backwards compatible
     + runlevels are supported via runlevel targets.
-* `systemd` uses *.service files instead of bash scripts
+* `systemd` uses `*.service` files instead of shell scripts
+* keeps track of processes using cgroups
 
-#### systemctl
+##### systemctl
+Main utility to manage services.
 
 `systemctl [options] command [name]`
+
+`systemctl                   # list active units`
+`systemctl status <unit>`
+`systemctl start <unit>      # activate unit`
+`systemctl stop <unit>       # inactivate`
+`systemctl restart <unit>    # restart`
+`systemctl reload <unit>     # reload after configuration change`
+
+`systemctl enable <unit>     # enables a unit, doesn’t activate it, `
+`systemctl disable <unit>    # disables and removes symlinks`
+
+`systemctl cat <unit>        # cat unit-file of <unit>`
+`systemctl edit <unit>       # edit unit-file of <unit>`
+
+#### `SysVinit`
+`SysV` runlevels denote different system states as `SysV` is running.
+
+runlevel    | Desc
+---         | ---
+0           | shutdown system
+1           | single user mode
+2           | multi-user mode, no NFS, only text login
+3           | multi-user mode, with NFS and network, only text login
+4           | not used
+5           | multi-user mode, with NFS and network, graphical login
+6           | reboot system
+
+To get the current runlevel, run
+
+`runlevel`
+
+runlevel can be set in kernel command line, too and system goes into this runlevel after boot. For example, to go into single user mode, just append `1` to the end of kernel commandline.
+
+##### `/etc/inittab`
+Historically, `/etc/inittab` file is used to tell `SysV` which scripts to run to bring the system to a runlevel. The format is
+
+`id:runlevel(s):action:process`
+
+`upstart`-based distributions have only the default runlevel in this file. The default level is usually 5.
+
+`id:5:initdefault`
+
+`systemd`-based recent distributions do not use this file at all.
+
+##### SysVinit startup scripts
+
+Traditional method is to run `/etc/rc.sysinit` script which performs initial functions. Next, `rc` script is run with the desired runlevel as argument. This causes the system to go to `/etc/rc[0-6].d` directory and run all scripts there to reach specified runlevel.
+
+All service scripts are located in `/etc/init.d`. To create a new `SysVinit` service, its script needs to be put in `/etc/init.f` directory. Scripts from runlevel directories link back to `/etc/init.d`. 
+
+* Startup scripts start with `S` in the name wheresa kill scripts with `K`.
+* The number following the script type letter determines execution order.
+
+```
+$ ll /etc/rc5.d/
+lrwxrwxrwx 1 root S01ssh -> ../init.d/ssh
+lrwxrwxrwx 1 root 01rsync -> ../init.d/rsync
+lrwxrwxrwx 1 root 01lightdm -> ../init.d/lightdm
+...
+```
+
+##### `chkconfig`
+Used to query and configure services to run in a runlevel.
+
+##### `service`
+Used to manage services, start, stop, status, reload etc. It's `systemctl` equivalent in `systemd`.
+
+#### `upstart`
+`upstart` is event-driven. Events are sent to `init` process to tell it to execute certain commands. `initctl` is `systemctl` equivalent in `systemd`. `upstart` is superseded by `systemd`.
+
+
