@@ -310,7 +310,7 @@ System activity reporter for humans. Report is made up from the data that is col
 
 ### XII. Process Monitoring
 
-##### top
+#### top
 Interactive process monitoring tool. Press
 * `P` to sort by %CPU
 * `M` to sort by %MEM
@@ -324,7 +324,7 @@ CPU usage output
 * `id`: time spent idle
 * `wa`: time spent on IO completion
 
-##### ps
+#### ps
 
 ```ps [pid]...```
 
@@ -343,26 +343,29 @@ NI | nice
 comm | executable name only
 args | command with all its args
 
-###### `ps` options
+##### `ps` options
 
-```ps aux       # interpret options in BSD style grouped```
-```ps -aux      # interpret options in UNIX style grouped```
+`ps aux       # interpret options in BSD style grouped`  
+`ps -aux      # interpret options in UNIX style grouped`
 
-a: BSD style all processes
-u: output in user-oriented format
-x: remove "must have tty" restriction
--e: UNIX style all processes
--o : customize output like ps -o pid,uid,cmd
--l : long format
--f : full format
+opiton   |  purpose
+--- | ---
+a   | BSD style all processes
+u   | output in user-oriented format
+x   | remove "must have tty" restriction
+-e  | UNIX style all processes
+-o  | customize output like ps -o pid,uid,cmd
+-l  | long format
+-f  | full format
 
-###### `ps` selection
+##### `ps` selection
 * `ps -p 2,3,4            # get process with pid=2, 3 or 4`
 * `ps -C bash,java        # list processes with cmdline java`
-* `ps -u root,karakays    # select processes with user id
+* `ps -u root,karakays    # select processes with user id`
 
-* `pstree` to visualize process hierarchy by pid or uid.
-pstree [options] [pid,user]
+#### `pstree`
+`pstree` to visualize process hierarchy by pid or uid.  
+`pstree [options] [pid,user]`
 
 ### XIII. Memory Monitoring
 
