@@ -297,12 +297,18 @@ boot.log | system boot messages
     - how many times an interrupt type was handled by which CPU?
 * /proc/meminfo: meminfo 
 * /proc/sys/ contain tunable system parameters in plain text files
-    - /proc/sys/kernel: kernel paramters
-    - /proc/sys/vm: virtual memory paramters
+    - `/proc/sys/kernel`: kernel paramters
+    - `/proc/sys/vm`: virtual memory paramters
 
-Kernel parameters can be edited directly or set with `sysctl`.
+Kernel tunables can be edited directly or set with `sysctl`.
 
-#### /sys/
+`sysctl kernel.panic`
+
+Also VM tunables can be get/set again via `sysctl`.
+
+`sysctl vm.dirty_ratio`
+
+#### /sys
 aka sysfs. Provides unified information on device and drivers of various types, unified device model. Much of the hw information moved from /proc to /sys.
 `/dev` vs `/sys`: /dev contains device nodes to access the devices themselves whereas /sys contains device information as powered on, vendor, model, bus etc.
 
@@ -373,49 +379,58 @@ x   | remove "must have tty" restriction
 
 ### XIII. Memory Monitoring
 
-Virtual memory consists of resident memory and swap area.
+Virtual memory consists of resident memory and swap area. Memory usage and IO throughput are relatet because in most cases, most of the memory used to cache the contents of files on disk. Kernel stages disk writes into cache and over time it flushes them to disk. `dirty page` are memory pages that still need to be flushed.
 
 `/proc/sys/vm/` contains tunables for the virtual memory system.
-entry | purpose
+
+vm.entry | purpose
 ---   | ---
-overcommit_memory | enable/disable overcommitting
-overcommit_ratio | ?
-oom_kill_allocating_task | let oom-killer kill the task that triggered
+`dirty_bg_ratio | % of system memory for dirty pages before `flush` kicks in.
+`dirty_ratio` | abs. maximum of system memory for dirty pages. if reached here, all new IO blocks until dirty pages `flush`ed.
+`expire_centisecs` | dirty data expiry time
+`overcommit_memory` | 0=kernel estimates overcm allocation, 1=permits any overcm allocations, 2=prevents overcm
+`overcommit_ratio` | if overcm_memory=2, max overcm can reach swap + this % of RAM
+`oom_kill_allocating_task` | let oom-killer kill the task that triggered
+`panic_on_oom` | kernel panic on oom
+`swapiness` | how aggressively kernel swaps
 
-##### vmstat
 
-```vmstat [options] [delay] [count]```
-`vmstat` is the workhorse utility used mainly for memory stats but also for CPU, process and disk statistics.
--a option includes active and inactive memory namely pages recently used (might be clean or dirty) and pages not been recently used.
--d option is for disk statistics.
+#### vmstat
 
-###### output columns
+`vmstat [options] [delay] [count]`
 
-* procs
-- r: # of processes in ready state
-- b: # of processes in blocked state
+`vmstat` is mainly for virtual memory stats but also for CPU, process and disk statistics.
+* -a option includes active and inactive memory namely pages recently used (might be clean or dirty) and pages not been recently used.
+* -d option is for disk statistics.
+
+##### `vmstat` output
+
+* processes
+    - r: # of processes in ready state
+    - b: # of processes in blocked state
 * memory and io
-- swpd: swap size being used
-- free: current free memory
-- buff: buff vs cache??
-- cache: cache for data on disk for reads and also writes.
-    * flush means write cache to disk.
-- si: swap in v-mem read blocks/sec
-- so: swap out v-mem written blocks/sec
-- bi: blocks recvd from block device per sec
-- bo: blocks sent to block device per sec
+    - swpd: swap size being used
+    - free: current free memory
+    - buff: buff vs cache??
+    - cache: cache for file contents
+    - si: memory swapped in (from disk)
+    - so: memory swapped out (to disk)
+    - bi: blocks/sec read from disk
+    - bo: blocks/sec written to disk
 * system and cpu
-- in: interrupts per sec
-- cs: context switches per sec
-- us: %CPU time spent running _user code_
-- sy: %CPU time spent running _kernel code_
-- id: %CPU time spent idle
-- wa: %CPU time spent blocked in IO 
-- st: %CPU time spent stolen from vm
+    - in: interrupts per sec
+    - cs: context switches per sec
+    - us: %CPU spent running _user-space_
+    - sy: %CPU spent running _kernel-space_
+    - id: %CPU spent idle
+    - wa: %CPU spent on WAiting for IO 
+    - st: %CPU time spent stolen from vm
 
-###### Memory management
+`/proc/meminfo` contains memory statistics.
 
-* Swap area is moved back to memory when enough memory is freed or priority becomes in swap becomes higher.
+##### Memory management
+
+* `swap-in` occurs (swap area moves back to memory) when enough memory is freed or priority in swap becomes higher.
 
 * To come out of the memory pressure, kernel overcommits memory (exceeds RAM + swap) by means of that many processes don't use all requested memory. This technique applies for user processes only.
 
