@@ -1,6 +1,6 @@
-![](https://training.linuxfoundation.org/wp-content/uploads/2018/01/logo_lfcs.png)
+<img alt="" src="https://training.linuxfoundation.org/wp-content/uploads/2018/01/logo_lfcs.png" style="display: block; margin-top: 60px; margin-bottom: 60px; margin-left: auto; margin-right:auto; width: 250px;"/>
 
-This repository contains my personal notes that I take during preparation for [Linux Foundation Certified SysAdmin](https://training.linuxfoundation.org/certification/linux-foundation-certified-sysadmin-lfcs/) exam. 
+This repository contains my personal notes that I take during preparation for [Linux Foundation Certified SysAdmin](https://training.linuxfoundation.org/certification/linux-foundation-certified-sysadmin-lfcs/) exam on. 
 
 ## Table of contents
 
@@ -10,11 +10,11 @@ This repository contains my personal notes that I take during preparation for [L
 [ V. Package managers ](#v-package-managers)  
 [ VII. dpkg ](#vii-dpkg)    
 [ X. APT ](#x-apt)    
-[ XI. System Monitoring ](#xi-system-monitoring)   
-[ XII. Process Monitoring ](#xii-process-monitoring)   
-[ XIII. Memory Monitoring ](#xiii-memory-monitoring)   
-[ XIV. IO Monitoring ](#xiv-io-monitoring)  
-[ XV. IO Scheduling ](#xv-io-scheduling)  
+[ XI. System monitoring ](#xi-system-monitoring)   
+[ XII. Process monitoring ](#xii-process-monitoring)   
+[ XIII. Memory monitoring ](#xiii-memory-monitoring)   
+[ XIV. IO monitoring ](#xiv-io-monitoring)  
+[ XV. IO scheduling ](#xv-io-scheduling)  
 [ XVI. Filesystems ](#xvi-filesystems)  
 [ XVII. Disk partitioning ](#xvii-disk-partitioning)  
 [ XVIII. Filesystem features ](#xviii-filesystem-features)  
