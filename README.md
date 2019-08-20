@@ -1,3 +1,7 @@
+![](https://training.linuxfoundation.org/wp-content/uploads/2018/01/logo_lfcs.png)
+
+This repository contains my personal notes that I take during preparation for [Linux Foundation Certified SysAdmin](https://training.linuxfoundation.org/certification/linux-foundation-certified-sysadmin-lfcs/) exam. 
+
 ## Table of contents
 
 [ II. Filesystem layout ](#ii-filesystem-layout)  
@@ -22,7 +26,7 @@
 [ XXIV. RAID ](#xxiv-raid)  
 [ XXV. Kernel services and configuration ](#xxv-kernel-services-and-configuration)  
 [ XXVI. Kernel modules ](#xxvi-kernel-modules)  
-[ XXVII. Devices and `udev`](#xxvii-devices-and-udev)  
+[ XXVII. Devices and udev](#xxvii-devices-and-udev)  
 [ XXVIII. Virtualization ](#xxviii-virtualization)   
 [ XXIX. Containers ](#xxix-containers)   
 [ XXX. User account management ](#xxx-user-account-management)  
@@ -34,7 +38,7 @@
 [ XXXVI. Firewalls ](#xxxvi-firewalls)  
 [ XXXVII. System startup and shutdown ](#xxxvii-system-startup-and-shutdown)  
 [ XXXVIII. GRUB ](#xxxviii-grub)  
-[ XXXIX. `SysVinit`, `upstart` and `systemd`](#xxxix-sysvinit-upstart-and-systemd)
+[ XXXIX. SysVinit, upstart and systemd](#xxxix-sysvinit-upstart-and-systemd)
 
 ### II. Filesystem layout
 
@@ -292,7 +296,7 @@ boot.log | system boot messages
 /proc/ and /sys/ are pseudo-filesystems and contain information about the system state.
 
 #### /proc/
-* Current state of each process running: child processes, memory usage ...
+* Current state of each process running: child processes, memory usage, oom_score
 * /proc/interrupts contain statistics on interrupts
     - how many times an interrupt type was handled by which CPU?
 * /proc/meminfo: meminfo 
@@ -377,23 +381,26 @@ x   | remove "must have tty" restriction
 `pstree` to visualize process hierarchy by pid or uid.  
 `pstree [options] [pid,user]`
 
-### XIII. Memory Monitoring
+### XIII. Memory monitoring
 
-Virtual memory consists of resident memory and swap area. Memory usage and IO throughput are relatet because in most cases, most of the memory used to cache the contents of files on disk. Kernel stages disk writes into cache and over time it flushes them to disk. `dirty page` are memory pages that still need to be flushed.
+Virtual memory consists of resident memory and swap area. Memory usage and IO throughput are much related because in most cases, most of the memory is used to `cache` the contents of files on disk. Kernel stages disk writes into cache and over time it flushes them to disk. `dirty page` are memory pages that still need to be flushed. And `page` is the smallest unit of memory that can be accessed, allocated by processes or swapped in/out to disk.
+
+`#### `buffer` vs. `cache`
+`buffer` is a type of cache for filesystem metadata and block devices. That is, buffers remember filesystem superblocks, directory contents, file permissions etc. Of course, this kind of metadata always need to stay in memory since it's a must-have to access filesystem.
+`cache` is related to caching file contents in order to improve disk read access. `vm.dirty*` tunables are related here.
 
 `/proc/sys/vm/` contains tunables for the virtual memory system.
 
 vm.entry | purpose
 ---   | ---
-`dirty_bg_ratio | % of system memory for dirty pages before `flush` kicks in.
+`dirty_bg_ratio` | % of system memory for dirty pages before `flush` kicks in.
 `dirty_ratio` | abs. maximum of system memory for dirty pages. if reached here, all new IO blocks until dirty pages `flush`ed.
 `expire_centisecs` | dirty data expiry time
 `overcommit_memory` | 0=kernel estimates overcm allocation, 1=permits any overcm allocations, 2=prevents overcm
 `overcommit_ratio` | if overcm_memory=2, max overcm can reach swap + this % of RAM
 `oom_kill_allocating_task` | let oom-killer kill the task that triggered
 `panic_on_oom` | kernel panic on oom
-`swapiness` | how aggressively kernel swaps
-
+`swapiness` | how aggressively kernel swaps between 0 and 100. 0 means kernel only swaps agains OOM faults.
 
 #### vmstat
 
@@ -426,15 +433,14 @@ vm.entry | purpose
     - wa: %CPU spent on WAiting for IO 
     - st: %CPU time spent stolen from vm
 
-`/proc/meminfo` contains memory statistics.
+`/proc/meminfo` contains memory figures and statistics.
+* SwapTotal, SwapFree, Dirty etc.
 
 ##### Memory management
 
 * `swap-in` occurs (swap area moves back to memory) when enough memory is freed or priority in swap becomes higher.
 
-* To come out of the memory pressure, kernel overcommits memory (exceeds RAM + swap) by means of that many processes don't use all requested memory. This technique applies for user processes only.
-
-* Overcommission is configured in `/proc/sys/vm/overcommit_memory` file.
+* To come out of the memory pressure, kernel overcommits memory (exceeds RAM + swap) by means of that many processes don't use all requested memory. Overcommission applies to user-space only. For kernel, pages are allocated at request time.
 
 * In case available memory is exhauseted, OOM-killer exterminates process(es) selected to free up memory. The hard part here is which process will be killed to keep the system alive. To avoid the whole system to crash, a victim process is selected to free up memory. Selection is based on the value `badness` that is at /proc/{id}/oom_score`.
 
