@@ -1,4 +1,4 @@
-<img alt="" src="https://training.linuxfoundation.org/wp-content/uploads/2018/01/logo_lfcs.png" style="display: block; margin-top: 60px; margin-bottom: 60px; margin-left: auto; margin-right:auto; width: 250px;"/>
+<img alt="" align="middle" src="https://training.linuxfoundation.org/wp-content/uploads/2018/01/logo_lfcs.png" style="display: block; width: 250px;"/>
 
 This repository contains my personal notes that I take during preparation for [Linux Foundation Certified SysAdmin](https://training.linuxfoundation.org/certification/linux-foundation-certified-sysadmin-lfcs/) exam on. 
 
@@ -504,11 +504,11 @@ PRIO | io priority
 
 ```ionice [-c class] [-n pri] [-p pid] [cmd args]```
 
-Apply io scheduling either for existing pid or by starting new process <cmd>
+Apply io scheduling either for existing pid or by starting new process <cmd>.
 * IO scheduling class:
 - 0: none
-- 1: real time with a priority [0-7]
-- 2: [default] best effort with a priority [0-7]
+- 1: real time with a priority [0-7] (default=4)
+- 2: [default] best effort with a priority [0-7] (default=4)
 - 3: idle: served when there are no more requests
 
 ### XV. IO Scheduling
@@ -518,31 +518,30 @@ Apply io scheduling either for existing pid or by starting new process <cmd>
 - Minimize HW access:
     * requests ordered according to the physical location on disk: elevator scheme. SSDs don't require elevator scheme (rotational = 0)
     * requests are merged to get as big a contiguous region as possible
-- Write operations can wait to migrate from caches to disk without stalling - async. Read ops are blocking until completed. Reads favored over writes
-- Processes to share IO bandwidth fairly
+- Write ops can be done in `pagecache`s without blocking the process. however, read requests need satisfied immediately so reads are favored over writes for better parallelism.
 
-* There are different IO scheduling strategies available
+* There are different IO scheduling strategies available. Different schedulers can be applied per device.
 - Completely Fair Queueing (CFQ)
 - Deadling scheduling
 - noop
 
-* IO scheduler strategy can be specified per device at __kernel boottime__ or at __runtime__
-- to see available and current strategy, check `/sys/block/sda/queue/scheduler`
-- to switch the io scheduler
+* IO scheduler strategy can be specified per device at __kernel cmdline__ or at __runtime__.
+- to see current strategy for `sda`, check `/sys/block/sda/queue/scheduler`
+- to switch the io scheduler for `sda`
 ```echo noop > /sys/block/sda/queue/scheduler```
 
 * IO scheduling tunables are at ```/sys/block/<device>/queue/iosched/``` directory. These parameters are based on the strategy and change from one strategy to another.
 
 ##### CFQ
 
-* In CFQ, each process have its own request queue which works with a global dispatcher queue that submits actual requests to the device. Dequeuing each of these queues is done in round-robin style. Each queue is allocated timeslices to access the disk and works in FIFO order. Tunables:
+* In CFQ, each process have its own request queue. There is a global dispatcher queue that submits actual requests from process queues to the device. Dequeuing (from process queue to dispatcher) is done in round-robin style and FIFO order and then requests are sorted in the dispatcher by priority. Tunables are
 - quantum: max len of dispatcher queue
 - fifo_expire_async: expiry time of async request (buffered write) in queue. After it expires, it goes to dispatcher queue.
 - back_seek_max: max distance for backwards seeking. repositioning the head backwards is bad performance.
 
 ##### Deadline
 
-* Deadline strategy works based on the deadline - expiry of each request that guarantees to be served. There are 2 queues for r and w ordered by starting block (elevator queue), another 2 ordered by submission time (expire queue) and one global dispatcher queue. Scheduler checks expired requests first and only then moves to the elevator queue. Tunables:
+* Deadline strategy is based on request deadline - expiry of each request that guarantees to be served. There are 2 queues for r and w ordered by starting block (elevator queue), another 2 ordered by submission time (expire queue) and one global dispatcher queue. Scheduler checks expired requests first and only then moves to the elevator queue. Tunables:
 - read_expire: deadline for r request
 - write_expire: deadline for w request
 - write_starved: reads are preffered to writes. how many w requests can be starved?
