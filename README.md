@@ -1,4 +1,6 @@
-<img alt="" align="middle" src="https://training.linuxfoundation.org/wp-content/uploads/2018/01/logo_lfcs.png" style="display: block; width: 250px;"/>
+<p align="center">
+    <img alt="lfcs-logo" src="https://training.linuxfoundation.org/wp-content/uploads/2018/01/logo_lfcs.png"/>
+</p>
 
 This repository contains my personal notes that I take during preparation for [Linux Foundation Certified SysAdmin](https://training.linuxfoundation.org/certification/linux-foundation-certified-sysadmin-lfcs/) exam on. 
 
@@ -625,13 +627,13 @@ The content of hardware disk starts disk metadata, e.g. partition tables.
 * Dates back to early days of MSDOS. In some tools, aka, _dos_ or _msdos_. Table is stored in the first 512 bytes of the disk. Up to 4 primary partitions of which one as an extended partition.
 * Table has 4 entries and each 16 bytes size. Entry in the table contains active bit, file system code (xfs, ext4, swap etc.) and number of sectors.
 
-![disk with MBR scheme](https://lms.quickstart.com/custom/799658/images/partition_table_small.png)
+<p align="center"> <img alt="mbr-scheme" width="200" height="300" src="https://lms.quickstart.com/custom/799658/images/partition_table_small.png"/></p>
 
 ###### GPT
 * modern. disk starts with the GPT header (and also proactive MBR for backwards compatibilit)
 * Up to 128 entries (partitions) in the table and each 128 bytes of size.
 
-![disk with GPT scheme](https://lms.quickstart.com/custom/799658/images/GPT%20Layout.png)
+<p align="center"> <img alt="gpt-scheme" width="300" height="500" src="https://lms.quickstart.com/custom/799658/images/GPT%20Layout.png"/></p>
 
 * The partition table comes with the vendor and it's possible to migrate it from MBR to GPT but it's not hard to brick the machine while doing so, thus, benefits are not worth the risk.
 
