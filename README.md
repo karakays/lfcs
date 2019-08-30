@@ -413,8 +413,8 @@ vm.entry | purpose
 ##### `vmstat` output
 
 * processes
-    - r: # of processes in ready state
-    - b: # of processes in blocked state
+    - r: # of processes in runnable state (but not running)
+    - b: # of processes in blocked state (uninterruptable)
 * memory and io
     - swpd: swap size being used
     - free: current free memory
@@ -444,7 +444,9 @@ vm.entry | purpose
 
 * In case available memory is exhauseted, OOM-killer exterminates process(es) selected to free up memory. The hard part here is which process will be killed to keep the system alive. To avoid the whole system to crash, a victim process is selected to free up memory. Selection is based on the value `badness` that is at /proc/{id}/oom_score`.
 
-```swapon/swappoff [devices...] # enable/disable devices for paging/swapping```
+* Check `/proc/swaps` to see if any swap partition or file is used. The file is blank in case no swap is used/disabled.
+
+`swapon/swappoff [devices...] # enable/disable devices for paging/swapping`
 
 ### XIV. IO Monitoring
 
@@ -454,10 +456,10 @@ In an I/O-bound system, the CPU is mostly idle waiting IO ops to complete such a
 
 ```$ iostat [delay] [count]```
 
-iostat is the workhorse utility for IO monitoring. It shows mainly RW transfer rates by disk partition including CPU utilization. The first report (row) is stats since the system boot.
+iostat is main utility for IO monitoring. It shows mainly RW transfer rates by disk partition including CPU utilization. The first report (row) is stats since the system boot.
 
 ###### output columns
-Disk IO is expressed in number of blocks, the unit of work. Every read and write is done in multiple units of blocks.
+By default, disk IO is expressed in number of blocks, the unit of work. Every read and write is done in multiple units of blocks. 1B = 512 bytes
 
 * logical IO requests can be merged into one actual request
 
@@ -465,31 +467,30 @@ field | desc
 ---   | ---
 device | disk device [or partition]
 tps | io transactions per second
-kB_read/s | blocks read per seconds in kB
-kB_wrtn/s | blocks written per seconds in kB
+kB_read/s | blocks/s read
+kB_wrtn/s | blocks/s written
 kB_read | total block read in kB
 kB_wrtn | total block written in kB
 
-* -x option for extended output
+* -x option to include IO requests (actual + merged) and await times
 
 field | desc
 ---   | ---
 rrqm/s | # of read requests merged per sec, queued to device
 wrqm/s | # of write requests merged per sec, queued to device
-r/s | # of read requests per sec, to the device
-w/s | # of write requests per sec, to the device 
+r/s | actual # of read requests/s, to the device
+w/s | actual # of write requests/s, to the device 
 rkB/s | KB read per sec 
 wkB/s | KB written per sec 
 avgrq-sz | average request size in 512 bytes per sector
 avgqu-sz | average queue length???
-await | avg time elapsed in ms for queueing + servicing IO request
+await | avg time elapsed in queue + servicing request
 svctime | avg service time in ms for IO request
-%util | ???
+%util | %CPU time blocked
 
 ##### iotop
 
 * displays current IO usage by process updated periodically as in top.
-* requires root access
 
 * output columns
 
@@ -500,16 +501,20 @@ IO | time percentage process blocked waiting io
 PRIO | io priority
 
 ##### IO scheduling
-* Every process is associated with an IO classifier and priority. `ionice` sets scheduling class/priority of a given process manually
+* Every process is associated with an IO classifier which defines the priority in the scheduling queue. `ionice` is to prioritize a process in io scheduling
 
 ```ionice [-c class] [-n pri] [-p pid] [cmd args]```
 
 Apply io scheduling either for existing pid or by starting new process <cmd>
-* IO scheduling class:
-- 0: none
-- 1: real time with a priority [0-7]
-- 2: [default] best effort with a priority [0-7]
-- 3: idle: served when there are no more requests
+
+class | c value | desc
+--- | --- | ---
+none | 0 | none
+real-time | 1 | real time. Might starve other processes.
+best effort 2 | default
+idle | 3 | served when there are no more requests
+
+real-time and best-effort take priority between 0-7 where 0 is highest priority.
 
 ### XV. IO Scheduling
 * VM and VFS submit IO requests and it's the job of IO scheduler to prioritize and order these requests before they are given to block devices.
@@ -588,22 +593,26 @@ sysfs   | /sys |
 
 ### XVII. Disk partitioning
 
-##### Common disk types
+Common disk types
 * SATA
 * SCSI
 * USB
 * SSD
 
-##### Device naming scheme `/dev/sd{order}{partition}`
+Device naming scheme `/dev/sd{order}{partition}`
 * `/dev/sd*` is the entire disk device file which could be of type SCSI, SATA or USB. Following letter identifies the order, `/dev/sda` is the first device, `/dev/sdb` the second etc. The number refers to partition number, `/dev/sda2` is the second partition on `/dev/sda`.
 
-* SSD device naming scheme is `/dev/nvme{order}n{ns}p{part}`. {order} represents order, `/dev/nvme0n1` is the first entire disk device, `/dev/nvm1n1` the second etc. {ns} is the namespace and {part} is the partition number, e.g. `/dev/nvme0n1p1` represents device nvme0, with namespace 1 and partition 1.
+SSD device naming scheme is `/dev/nvme{order}n{ns}p{part}`. {order} represents order, `/dev/nvme0n1` is the first entire disk device, `/dev/nvm1n1` the second etc. {ns} is the namespace and {part} is the partition number, e.g. `/dev/nvme0n1p1` represents device nvme0, with namespace 1 and partition 1.
 
-`blkid` reports block device attributes.
+A partition can be identified by device-node, a label or a UUID.
 
-`lsblk` lists block devices in a tree format.
+`blkid` prints block device attributes and requires root access.
 
-`blkid` and `lsblk` work only with block devices.
+`blkid -k           # list all known filesystems`
+
+`lsblk` lists block devices and mount points for each.
+
+`lsblk -f           # list with filesystem type and uuid`
 
 ##### Disk geometry
 Rotational disks consist of platters, each of which is read by heads as disk spins. Tracks are divided into sectors in 512 byte size. SSDs are not rotational and have no moving parts.
@@ -620,23 +629,24 @@ A partition is associated with
 * end: end sector
 * filesystem
 
-##### Partition table schemes
+#### Partition table schemes
 The content of hardware disk starts disk metadata, e.g. partition tables.
-###### MBR
+
+MBR
 * Dates back to early days of MSDOS. In some tools, aka, _dos_ or _msdos_. Table is stored in the first 512 bytes of the disk. Up to 4 primary partitions of which one as an extended partition.
 * Table has 4 entries and each 16 bytes size. Entry in the table contains active bit, file system code (xfs, ext4, swap etc.) and number of sectors.
 
 ![disk with MBR scheme](https://lms.quickstart.com/custom/799658/images/partition_table_small.png)
 
-###### GPT
-* modern. disk starts with the GPT header (and also proactive MBR for backwards compatibilit)
-* Up to 128 entries (partitions) in the table and each 128 bytes of size.
+GPT
+* modern. disk starts with the GPT header (and also proactive MBR for backwards compatibility)
+* Up to 128 partitions in the table and each 128 bytes of size.
 
 ![disk with GPT scheme](https://lms.quickstart.com/custom/799658/images/GPT%20Layout.png)
 
-* The partition table comes with the vendor and it's possible to migrate it from MBR to GPT but it's not hard to brick the machine while doing so, thus, benefits are not worth the risk.
+* The partition table and filesystem comes with the vendor and it's possible to migrate it from MBR to GPT.
 
-##### Backup partition tables
+#### Backup partition tables
 
 To backup MBR, copy MBR table
 ```sudo dd if=/dev/sda of=mbrbackup bs=512 count=1```
@@ -647,15 +657,14 @@ To restore MBR write it back to the disk
 To backup GPT, use `sgdisk`
 ```sudo sgdisk --backup=sdabackup /dev/sda```
 
-##### Partition table editors
+#### Partition table editors
 Tools below at hardware device level. No filesystems need to be mounted ahead.
 
-command | Desc
+tool | purpose
 --- |   ---
 fdisk  | most standard interactive tool, works for MBR and GPT
 sfdisk | non-interactive fdisk for scripting
 parted | GNU version, interactive tool, works for MBR and GPT
-gparted| gui for parted
 gdisk  | guid partition table manipulator
 sgdisk | script interface for gdisk
 
@@ -664,11 +673,15 @@ sgdisk | script interface for gdisk
 ```fdisk <device>   # go to interactive mode for device```
 
 ##### parted
-```parted <device> <command> <options>```
+```parted [options] [device [command]]```
 
-To create a partition with `parted`
-```sudo parted /dev/loop0 unit MB mkpart primary ext4 0 256```
-You can specify partition file-system here or later with `mkfs`.
+`parted -l                  # list partition tables on all devices`
+`parted /dev/sdb print      # partition table for /dev/sdb`
+
+##### parted interactive mode
+
+`(parted) mktable gpt           # create a partition table (destroys data)`
+`(parted) mkpart primary 0 8000 # create part`
 
 * /proc/partitions is what kernel is aware of partitions.
 
@@ -676,38 +689,48 @@ You can specify partition file-system here or later with `mkfs`.
 
 ### XVIII. Filesystem features
 
-Extended attributes are metadata that filesystem does not handle directly. `lsattr` to list and `chattr` to change attributes.
+#### File attributes
 
-Flags:
-* a: append-only
-* i: immutable
+Extended file attributes are metadata that filesystem does not handle directly. `lsattr` to list and `chattr` to change file attributes.
+
+File flags:
+* a: file is append-only
+* i: immutable (no modification, renaming etc.)
 * d: skip dump
 * A: set access time only when mod-time changes
 
-Formatting a filesystem means creating a filesystem on a partition. `mkfs` utility exists for this. Be careful, formatting a filesystem deletes existing content!
+Formatting a filesystem means creating a filesystem on a partition. `mkfs` utility exists for this. Formatting a filesystem deletes existing content!
 
-```sudo mkfs -t [fs] [device-file]```
-equivalent to ```sudo mkfs.ext4 [device-file]```
+```mkfs -t [fs] [devnode]```
+
+is equivalent to ```mkfs.ext4 [devnode]```
+
+`mkfs.ext4` options are not the same with those of `mkfs.msdos`. Check fs-specific options with
+`mkfs.ext4 --help`
 
 #### Checking/repairing filesystems
+
 Check and fix filesystem error with ```fsck```. It should only run on unmounted systems.
+
 ```sudo fsck -t [fs] [device-file]```
 equivalent to ```sudo fsck.ext4 [device-file]```
 
 _journaling_ filesystems are much faster to check than older systems because not the whole filesystem needs to be checked only last failed transactions.
 
 #### Mounting filesystem
-In order to access a block device from the virtual filesystem, it first needs to be attached to the root directory tree at some point. You mount filesystems (on some device), not block devices directly, so mounting is related with the filesystem rather then directly the disk device itself.
+In Linux, all files are accessible from the root tree `/`. A filesystem needs to be attached to the root `/` before it can be accessed. Be the filesystem in a remote device, USB etc.Mounting is always related with the filesystem rather then the disk device itself directly.
 
 ```mount [target] [mount-point]``` and ```umount [mount-point]``` to unmount. Mount point directory needs to exist before. Non-empty directories can be used as mount points.
-[target] can be either a device-file, a partition label or filesystem UUIDs. device-node can change at boot time (based on which device picked up first) and labels do not force unique names. UUIDs is reliable as it's unique to specify a filesystem globally. Filesystem UUIDs are generated when creating (format) a filesystem. `blkid` can list device nodes and filesystem information on it without having it mounted first!
 
-Question: how can a filesystem UUID and device-file can be treated the same as a mount target. One is a block device and the other is a filesystem on it. That would also mean FS UUID is globally unique across all the hardware devices in the system. Based on the above, I think, you cannot mount a device without creating a filesystem on it, first.
+[target] can be a device-node, a partition label/UUID or filesystem labbel/UUID. device-node can change at boot time (based on which device picked up first) and labels do not force unique names. UUIDs are reliable because they are unique and consistent. Filesystem UUIDs are generated when creating (format) a filesystem.
 
 ```mount UUID=<fs-uuid> /mount-point```
 ```mount LABEL=<fs-label> /mount-point```
 
 -t option for filesystem, optional `mount` can detect a filesystem.
+
+List all mounted filesystems
+`mount -l`
 
 ```unmount [devicel-file | mount-point]```
 If any terminal is open or any process is working in the mountpoint, unmount will fail with `target is busy error`.
