@@ -1,4 +1,6 @@
-<img alt="" src="https://training.linuxfoundation.org/wp-content/uploads/2018/01/logo_lfcs.png" style="display: block; margin-top: 60px; margin-bottom: 60px; margin-left: auto; margin-right:auto; width: 250px;"/>
+<p align="center">
+    <img alt="lfcs-logo" src="https://training.linuxfoundation.org/wp-content/uploads/2018/01/logo_lfcs.png"/>
+</p>
 
 This repository contains my personal notes that I take during preparation for [Linux Foundation Certified SysAdmin](https://training.linuxfoundation.org/certification/linux-foundation-certified-sysadmin-lfcs/) exam on. 
 
@@ -523,31 +525,30 @@ real-time and best-effort take priority between 0-7 where 0 is highest priority.
 - Minimize HW access:
     * requests ordered according to the physical location on disk: elevator scheme. SSDs don't require elevator scheme (rotational = 0)
     * requests are merged to get as big a contiguous region as possible
-- Write operations can wait to migrate from caches to disk without stalling - async. Read ops are blocking until completed. Reads favored over writes
-- Processes to share IO bandwidth fairly
+- Write ops can be done in `pagecache`s without blocking the process. however, read requests need satisfied immediately so reads are favored over writes for better parallelism.
 
-* There are different IO scheduling strategies available
+* There are different IO scheduling strategies available. Different schedulers can be applied per device.
 - Completely Fair Queueing (CFQ)
 - Deadling scheduling
 - noop
 
-* IO scheduler strategy can be specified per device at __kernel boottime__ or at __runtime__
-- to see available and current strategy, check `/sys/block/sda/queue/scheduler`
-- to switch the io scheduler
+* IO scheduler strategy can be specified per device at __kernel cmdline__ or at __runtime__.
+- to see current strategy for `sda`, check `/sys/block/sda/queue/scheduler`
+- to switch the io scheduler for `sda`
 ```echo noop > /sys/block/sda/queue/scheduler```
 
 * IO scheduling tunables are at ```/sys/block/<device>/queue/iosched/``` directory. These parameters are based on the strategy and change from one strategy to another.
 
 ##### CFQ
 
-* In CFQ, each process have its own request queue which works with a global dispatcher queue that submits actual requests to the device. Dequeuing each of these queues is done in round-robin style. Each queue is allocated timeslices to access the disk and works in FIFO order. Tunables:
+* In CFQ, each process have its own request queue. There is a global dispatcher queue that submits actual requests from process queues to the device. Dequeuing (from process queue to dispatcher) is done in round-robin style and FIFO order and then requests are sorted in the dispatcher by priority. Tunables are
 - quantum: max len of dispatcher queue
 - fifo_expire_async: expiry time of async request (buffered write) in queue. After it expires, it goes to dispatcher queue.
 - back_seek_max: max distance for backwards seeking. repositioning the head backwards is bad performance.
 
 ##### Deadline
 
-* Deadline strategy works based on the deadline - expiry of each request that guarantees to be served. There are 2 queues for r and w ordered by starting block (elevator queue), another 2 ordered by submission time (expire queue) and one global dispatcher queue. Scheduler checks expired requests first and only then moves to the elevator queue. Tunables:
+* Deadline strategy is based on request deadline - expiry of each request that guarantees to be served. There are 2 queues for r and w ordered by starting block (elevator queue), another 2 ordered by submission time (expire queue) and one global dispatcher queue. Scheduler checks expired requests first and only then moves to the elevator queue. Tunables:
 - read_expire: deadline for r request
 - write_expire: deadline for w request
 - write_starved: reads are preffered to writes. how many w requests can be starved?
@@ -636,13 +637,13 @@ MBR
 * Dates back to early days of MSDOS. In some tools, aka, _dos_ or _msdos_. Table is stored in the first 512 bytes of the disk. Up to 4 primary partitions of which one as an extended partition.
 * Table has 4 entries and each 16 bytes size. Entry in the table contains active bit, file system code (xfs, ext4, swap etc.) and number of sectors.
 
-![disk with MBR scheme](https://lms.quickstart.com/custom/799658/images/partition_table_small.png)
+<p align="center"> <img alt="mbr-scheme" width="200" height="300" src="https://lms.quickstart.com/custom/799658/images/partition_table_small.png"/></p>
 
 GPT
 * modern. disk starts with the GPT header (and also proactive MBR for backwards compatibility)
 * Up to 128 partitions in the table and each 128 bytes of size.
 
-![disk with GPT scheme](https://lms.quickstart.com/custom/799658/images/GPT%20Layout.png)
+<p align="center"> <img alt="gpt-scheme" width="300" height="500" src="https://lms.quickstart.com/custom/799658/images/GPT%20Layout.png"/></p>
 
 * The partition table and filesystem comes with the vendor and it's possible to migrate it from MBR to GPT.
 
