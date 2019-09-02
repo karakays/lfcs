@@ -726,28 +726,31 @@ is equivalent to ```mkfs.ext4 [devnode]```
 Check and fix filesystem error with ```fsck```. It should only run on unmounted systems.
 
 ```sudo fsck -t [fs] [device-file]```
+
 equivalent to ```sudo fsck.ext4 [device-file]```
 
 _journaling_ filesystems are much faster to check than older systems because not the whole filesystem needs to be checked only last failed transactions.
 
 #### Mounting filesystem
-In Linux, all files are accessible from the root tree `/`. A filesystem needs to be attached to the root `/` before it can be accessed. Be the filesystem in a remote device, USB etc.Mounting is always related with the filesystem rather then the disk device itself directly.
+In Linux, all files are accessible from the root tree `/`. A filesystem needs to be attached to the root `/` before it can be accessed. Be the filesystem in a remote device, USB etc. Mounting is always related with the filesystem rather then the disk device itself directly.
 
 ```mount [target] [mount-point]``` and ```umount [mount-point]``` to unmount. **Mount point directory needs to exist before**. Non-empty directories can be used as mount points.
 
-[target] can be a device-node, a partition label/UUID or filesystem label/UUID. device-node can change at boot time (based on which device picked up first) and labels do not force unique names. UUIDs are reliable because they are unique and consistent. Filesystem UUIDs are generated when creating (format) a filesystem.$
+[target] can be a device-node, a partition label/UUID or filesystem label/UUID. device-node can change at boot time (based on which device picked up first) and labels do not force unique names. UUIDs are reliable because they are unique and consistent. Filesystem UUIDs are generated when creating (format) a filesystem.
 
-```mount UUID=<fs-uuid> /mount-point```
-```mount LABEL=<fs-label> /mount-point```
-```mount PARTUUID=<part-uuid> /mount-point```
-```mount PARTLABEL=<part-label> /mount-point```
+```mount UUID=<fs-uuid> /mount-point```  
+```mount LABEL=<fs-label> /mount-point```  
+```mount PARTUUID=<part-uuid> /mount-point```  
+```mount PARTLABEL=<part-label> /mount-point```  
 
--t option for filesystem, optional `mount` can detect a filesystem.
+`-t` option for filesystem, is optional `mount` can detect a filesystem.
 
 List all mounted filesystems
+
 `mount -l`
 
 ```unmount [devicel-file | mount-point]```
+
 If any terminal is open or any process is working in the mountpoint, unmount will fail with `target is busy error`.
 
 #### Network shares
@@ -757,15 +760,17 @@ Mount remote filesystem with same `mount` command and work locally. The most com
 
 #### Mounting at boot
 ```mount -a``` is used to mount all filesystems specified in `/etc/fstab`. Filesystems are mount as in their order in `fstab`. It contains space-separated values and also describes who may mount with what permissions. During boot time, `mount -a` is executed.
+
 ```<device, uuid, label> <mount-point> <type> <options in csv> <fsck pass or not>```
 
 #### Automatic mount
-You can let filesystems mount automatically when they are accessed. _systemd_ has built-in support for that using `/etc/fstab` file. This saves you extra mount commands.
+You can let filesystems mount automatically at the moment they are accessed. _systemd_ has built-in support for that using `/etc/fstab` file. This saves you extra `mount` commands.
 
-```\# sample entry in /etc/fstab
+```
+\# sample entry in /etc/fstab
 LABEL=yubikey /mount ext4 noauto,x-systemd.automount,x-systemd.device-timeout=10,x-systemd.idle-timeout=30
 ```
-noauto to disable auto mounting at boot. x-systemd.automount indicates systemd automount facility used. idle-timeout lets filesystem umount automaticaly after it stays idle timeout.
+`noauto` to disable auto mounting at boot. `x-systemd.automount` indicates systemd automount facility used. `idle-timeout` lets filesystem umount automaticaly after it stays idle timeout.
 
 ### XIX. Filesystem features
 
@@ -776,26 +781,41 @@ noauto to disable auto mounting at boot. x-systemd.automount indicates systemd a
 * Memory use by Linux kernel never swapped out!
 
 `mkswap device [size]` to set up a swap are in a device or _file_ given.
+
 `swapon [device/file...]` to enable swapping on device given.
+
 `swapoff [device/file...]` to disable swapping on device given.
 
 #### Filesystem quotas
-Disk quotas control maximum space particular users can have on the disk. It works on a mounted filesystem basis.
+Disk quotas control maximum space particular users can have on the disk. Quotas are based per filesystem basis. There are limits on number of blocks and inodes. These limits are expressed as soft and hard limits. Hard limits can never be exceeded. Soft limits can be exceeded for a grace period.
 
-* To create quota, filesystem must be mounted with `usrquota` or `grpquota` options.
+1. To create a quota, filesystem must be mounted with `usrquota` or `grpquota` options.
 
-* `quotacheck` generates quota accounting files at root of quoted filesystem i.e. aquota.user, aquota.group
+`sudo mount -o usrquota /dev/sda1`
 
-* `quotaon` and `quotaoff` to enable/disable quoting on a per filesystem basis.
+2. `quotacheck` generates quota accounting files initially. This is stored in root of quoted filesystem i.e. `aquota.user`, `aquota.group`. Such files must exist for quota operations.
 
-* `quota` used to report on quotas. -u and -g options for current user/group. root can query any user's quota.
+`sudo quotacheck -v /media/usb`
 
-```sudo quota alice     # quora report of alice```
+`quotacheck` is also used to update quota file.
 
-##### Setting up quotas
-edquota is the quota editor to set it up. There are limits on blocks and on inodes. Limits are specified as soft and hard limits where hard limits can never be exceeded. Soft limits can be exceeded for a grace period. Grace periods are set per filesystem.
+3. Turn on quotas
 
-```edquota -u alice``` to edit limits of a user.
+`sudo quotaon -v /media/usb`
+
+4. Set up quotas per user or group
+
+`sudo edquota <user>`
+
+In the quota editor, only soft and hard limits can be edited, other fields are informational only.
+
+To change grace period,
+
+`sudo edquota -t`
+
+5. To query quota information of current user, type
+
+`quota`
 
 ##### `df`
 `disk free` lists all filesystems mounted, mountpoints and available space on each.
