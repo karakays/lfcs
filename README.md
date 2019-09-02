@@ -454,6 +454,8 @@ vm.entry | purpose
 
 In an I/O-bound system, the CPU is mostly idle waiting IO ops to complete such as disk or network ops.
 
+A `disk block` is the smallest readable or writable unit that can be addressed in disk - an abstraction that comes through the filesystem. That means a file size cannot be smaller than filesystem block size, usually 4K. 
+
 ##### `iostat`
 
 ```$ iostat [delay] [count]```
@@ -564,6 +566,7 @@ Every file is associated with an inode. inode is a datastructures that holds fol
 * owner / owner group
 * size
 * timestamps (last accessed, modified, change)
+
 To read a file content, you need to have inode number, first. File names are not stored in the file inodes but in the directory inode. Directory is a special file which holds a table that maps file names to inode ids. The name-inode mapping is called `link`.
 ```ln [-s] target link-name # creates a link```
 * Hard link points to an inode. As a result, the same file can have multiple names mapped to the same inode.
@@ -601,7 +604,7 @@ Common disk types
 * SSD
 
 Device naming scheme `/dev/sd{order}{partition}`
-* `/dev/sd*` is the entire disk device file which could be of type SCSI, SATA or USB. Following letter identifies the order, `/dev/sda` is the first device, `/dev/sdb` the second etc. The number refers to partition number, `/dev/sda2` is the second partition on `/dev/sda`.
+* `/dev/sd\*` is the entire disk device file which could be of type SCSI, SATA or USB. Following letter identifies the order, `/dev/sda` is the first device, `/dev/sdb` the second etc. The number refers to partition number, `/dev/sda2` is the second partition on `/dev/sda`.
 
 SSD device naming scheme is `/dev/nvme{order}n{ns}p{part}`. {order} represents order, `/dev/nvme0n1` is the first entire disk device, `/dev/nvm1n1` the second etc. {ns} is the namespace and {part} is the partition number, e.g. `/dev/nvme0n1p1` represents device nvme0, with namespace 1 and partition 1.
 
@@ -757,7 +760,7 @@ noauto to disable auto mounting at boot. x-systemd.automount indicates systemd a
 
 #### Swap
 
-* Most memory is used to cache file contents to prevent going to the disk more than necessary. _Such _pages_ are never swapper out_. _dirty pages_ (file content in memory != of in disk) are flushed out to disk.
+* Most memory is used to cache file contents to prevent going to the disk more than necessary._Such _pages_ are never swapper out_. _dirty pages_ (file content in memory != of in disk) are flushed out to disk.
 
 * Memory use by Linux kernel never swapped out!
 
@@ -789,37 +792,54 @@ edquota is the quota editor to set it up. There are limits on blocks and on inod
 
 ### XX. ext filesystems
 
-`ext4` is default filesystem on most Linux distributions. Many enhancements achieved over ext2/3 such as, maximum filesystem size, maximum number of subdirectoeis, block allocation optimizations, faster fsck, more reliable journaling etc. Another improvement is using _extents_ for large files. ext3 used to hold a list of individual block pointers that a file allocates. That didn't scale well for large files, for a 1GB file, it needs 256K pointers (in 4K blocks). In ext4 instead, a group of contiguous blocks are used which are called _extents_.
+`ext4` is default filesystem on most Linux distributions. Many enhancements achieved over ext2/3 such as, maximum filesystem size, maximum number of subdirectoeis, block allocation optimizations, faster `fsck`, more reliable journaling etc. Another improvement is using _extents_ for large files. ext3 used to hold a list of individual `block` pointers that a file allocates. That didn't scale well for large files, for a 1GB file, it needs 256K pointers (in 4K blocks). In ext4 instead, a group of contiguous blocks are used which are called _extents_.
 
 * Block size is selected when filesystem is formatted, 512, 1024, 2048 or 4096 bytes. A block must fit into a memory page and because of that you cannot have 8K block in 4K pages.
 
 * `inode reservation` is used to improve performance where a certain number of inodes are alocated ahead when directory is created.
 
 #### ext4 layout
-Disk blocks are grouped together into block groups. The first disk block 0 is reserved for partition boot sector?? and called boot block.  
-The first and second blocks are same for every block group and comprise _superblock_ and _group descriptors_. Kernel uses first superblock (primary) and references other back superblock copies only during fsck until a healthy one is found.
+The first 1024 bytes in the partition is reserved for boot sector. After that, there is a series of block groups each in the same size. A block group is a group of disk blocks that have the same size. The layout of a ext4 block groups is as
 
-![ext filesystem layout](/assets/ext_filesystem.png)
+![ext4 filesystem layout](https://selvamvasu.files.wordpress.com/2014/08/ext4.jpg)
 
-* superblock contains global information about the filesystem.
-    - filesystem status to check during OS boot. If it's not cleanly unmounted, fsck is run before it gets mounted.
-    - total mount count (reset in every `fsck`) and max mount count.
-    - filesystem block size (set with `mkfs`)
-    - disk blocks per block group
-    - free block count
-    - free inode count
-    - OS id
+Redundant `superblock` and group descriptors are written to some of the block groups for fault tolerance. However, not every block group has a redudant copy - those begin with data block bitmap. Kernel uses first superblock (primary) and references other back superblock copies only during fsck until a healthy one is found.
 
-* block and inode bitmaps contain 0s and 1s to indicate whether block/inode is free/used in the respective block group where they reside.
+block and inode bitmaps contain 0s and 1s to indicate whether block/inode is free/used in the respective block group.  Each block bitmap and inode bitmap must fit into one disk block (4K).
 
-* inode table?
+inode table?
 
-* `dumpe2fs` dumps ext file system information.
-```dumpe2fs <device>```
+##### Superblock
 
-* `tune2fs` to tune ext filesystem parameters.
+`superblock` contains global metadata about the filesystem itself.
 
-fragmentation: As new files get written and some deleted over the time, gaps are created in the disk. Sometimes, a new file doesn't quite fit in a gap so it needs to be split into parts and written into multiple areas in the disk. Reading a fragmented file is slow. Defragmentation tools enable to look for such files and restore them in contiguous blocks for faster reads.
+- filesystem health status and details on `fsck`. Checked during OS boot and if not cleanly unmounted, `fsck` is run before it gets mounted.
+- mount details like mount count (reset in every `fsck`) max mount count, mount date etc.
+    * if max mount count is reached, filesystem is forced to be `fsck`ed.
+- filesystem block size (set with `mkfs`)
+- disk blocks per group
+- free block count
+- free inode count
+- OS id etc.
+
+##### `dumpe2fs`
+To print ext4 superblock details, use `dumpe2fs`.
+
+`dumpe2fs <device>`
+
+##### `tune2fs`
+`tune2fs` to tune ext filesystem parameters like
+
+- maximum mount count before `fsck` called
+- time interval interval `fsck` checks
+- etc.
+
+To see all parameters and its values that can be updated, call
+
+`tune2fs -l <dev-node>`
+
+##### Fragmentation
+As new files get written and some deleted over the time, gaps are created in the disk. Sometimes, a new file doesn't quite fit in a gap so it needs to be split into parts and written into multiple areas in the disk. Reading a fragmented file is slow. Defragmentation tools enable to look for such files and restore them in contiguous blocks for faster reads.
 
 ### XXI. XFS and btrfs filesystems
 Next generation filesystems with roboust capabilities challenge the dominance of `ext4` in Enterprise Linux distributions.
