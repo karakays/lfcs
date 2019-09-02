@@ -590,7 +590,15 @@ proc    | /proc |
 tmpfs   | Anywhere | file storage in RAM
 sysfs   | /sys |
 
-```df [file]... # disk space on all mounted filesystems```
+#### Disk free
+
+See disk usage on all mounted filesystems
+
+```df```
+
+See disk usage of filsystem where <file> resides```
+
+```df <file>```
 
 ### XVII. Disk partitioning
 
@@ -624,6 +632,7 @@ Disk is divided into contiguous groups of sectors called partitions. Partitionin
 * easier backups
 * performance and security enhancement on certain parts
 * swap can be isolated
+
 A partition is associated with
 * type: primary, extended or logical
 * start: start sector
@@ -721,12 +730,14 @@ _journaling_ filesystems are much faster to check than older systems because not
 #### Mounting filesystem
 In Linux, all files are accessible from the root tree `/`. A filesystem needs to be attached to the root `/` before it can be accessed. Be the filesystem in a remote device, USB etc.Mounting is always related with the filesystem rather then the disk device itself directly.
 
-```mount [target] [mount-point]``` and ```umount [mount-point]``` to unmount. Mount point directory needs to exist before. Non-empty directories can be used as mount points.
+```mount [target] [mount-point]``` and ```umount [mount-point]``` to unmount. **Mount point directory needs to exist before**. Non-empty directories can be used as mount points.
 
-[target] can be a device-node, a partition label/UUID or filesystem labbel/UUID. device-node can change at boot time (based on which device picked up first) and labels do not force unique names. UUIDs are reliable because they are unique and consistent. Filesystem UUIDs are generated when creating (format) a filesystem.
+[target] can be a device-node, a partition label/UUID or filesystem label/UUID. device-node can change at boot time (based on which device picked up first) and labels do not force unique names. UUIDs are reliable because they are unique and consistent. Filesystem UUIDs are generated when creating (format) a filesystem.$
 
 ```mount UUID=<fs-uuid> /mount-point```
 ```mount LABEL=<fs-label> /mount-point```
+```mount PARTUUID=<part-uuid> /mount-point```
+```mount PARTLABEL=<part-label> /mount-point```
 
 -t option for filesystem, optional `mount` can detect a filesystem.
 
@@ -757,7 +768,7 @@ noauto to disable auto mounting at boot. x-systemd.automount indicates systemd a
 
 #### Swap
 
-* Most memory is used to cache file contents to prevent going to the disk more than necessary. _Such _pages_ are never swapper out_. _dirty pages_ (file content in memory != of in disk) are flushed out to disk.
+* Most memory is used to cache file contents to prevent going to the disk more than necessary. _Such _pages_ are never swapped out_. _dirty pages_ (file content in memory != of in disk) are flushed out to disk.
 
 * Memory use by Linux kernel never swapped out!
 
