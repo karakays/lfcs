@@ -887,24 +887,31 @@ Next generation filesystems with roboust capabilities challenge the dominance of
 
 ### XXII. Encrypting disks
 
-Encryption at the block device level provides strong protection. Linux Unified Key Setup is the standard method in Linux that provides this facility. LUKE is installed on top of `cryptsetup` utility.
+LUKS is a disk encryption method at the block-device level. Linux Unified Key Setup is the standard method in Linux that provides this facility. LUKE is installed on top of `cryptsetup` utility.
 
-##### cryptsetup
-`cryptsetup` is to manage LUKS encrypted partitions.
-```cryptsetup [options...] <action> <action args>```
+#### cryptsetup
+`cryptsetup` command is to manage LUKS encrypted partitions.
 
-Format the partition with LUKS and sets a symmetric secret. This is done only once.
-```sudo cryptosetup luksFormat /dev/sda2```
-Make partition unencrypt and available to use, asks for secret interactively.
-luksOpen creates a mapping from which the partition will be available. The device will be located at /dev/mapper/name.
-```sudo cryptosetup luksOpen /dev/sda2 name```
-From now on, use the device as if it were unencrypted partition.
-Format filesystem first and mount
-```sudo mkfs.ext4 /dev/mapper/name``` 
-```sudo mount /dev/mapper/name /mnt``` 
-When done, unmount it and remove the mapping with luksClose.
-```sudo umount /dev/mapper/name``` 
-```sudo cryptsetup lukeClose /dev/mapper/name```
+`cryptsetup [options...] <action> <action args>`
+
+1. `luksFormat` action initializes LUKS partition. It sets the symmetric key.
+    `sudo cryptosetup luksFormat /dev/sda2`
+2. `luksOpen` creates a device mapper whose name is provided as action argument. `luksOpen` asks for the secret before creating device mapper. The device mapper is located at `/dev/mapper/name`.
+    `sudo cryptosetup luksOpen /dev/sda2 name`
+3. Use the device as if it were unencrypted partition. Format filesystem first and mount
+    `sudo mkfs.ext4 /dev/mapper/name` 
+    `sudo mount /dev/mapper/name /mnt` 
+```
+NAME             FSTYPE      LABEL  UUID                                 MOUNTPOINT
+sda
+├─sda1           crypto_LUKS        42a2b0ea-19f8-47a9-af1e-930464c7ed2d
+│ └─my-luks-disk ext4               3cc849f2-984c-48cc-93e6-806a1d9f83da /media/karakays/usb
+└─sda2           ext4               a2fcd826-29de-435e-98af-696e1f707b03
+```
+
+4. When done, unmount it and remove the mapping with `luksClose`.
+    `sudo umount /dev/mapper/name`
+    `sudo cryptsetup luksClose /dev/mapper/name`
 
 ##### Mounting at boot
 To mount an encrypted partition at boot time, add a normal entry to /etc/fstab. /etc/fstab is not aware that device is encrypted.
