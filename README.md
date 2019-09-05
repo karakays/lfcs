@@ -1018,13 +1018,14 @@ A snapshot of an existing logical volume is useful for backup, app testing or de
 
 ### XXIV. RAID
 
-Redundant Array of Independant Disks is clustering of physical disks to enable data integrity and recoverability. Disk IO activity is spread into the cluster. Data striping provides parallel writes that increases performance.
+RAID (Redundant Array of Independant Disks) is clustering of physical disks to promote data integrity and recoverability. Disk IO activity is spread into the cluster. Data striping provides parallel writes that increases performance.
 RAID can be implemented either in software or in hardware. Linux kernel supports software RAID. `mdadm` is the tool to create and manage software RAID devices.
 
-On the other hand, hardware RAID are transparent to OS.
-Features:
-* mirroring - storage clustering for availability
-* striping - splitting filesystems to more than one disk
+On the other hand, hardware RAID is transparent to OS.
+
+RAID provides:
+* mirroring - duplicate data for availability
+* striping - splitting filesystems to more than one disk to increase performance
 * parity - fault tolerant with extra data for error recovery
 
 #### RAID levels
@@ -1037,7 +1038,8 @@ Raid levels increas by complexity.
 * RAID10: mirroring and strping.
 
 Create a software raid device
-```mdadm --create /dev/md0 --level=1 --raid-disks=2 /dev/sdb1 /dev/sdc1```
+
+`mdadm --create /dev/md0 --level=1 --raid-disks=2 /dev/sdb1 /dev/sdc1`
 
 #### Hot spare
 A hot spare is used as a failover mechanism. It is active in the cluster and is switched into operation when a disk fails. A hot spare can be created when creating RAID array or later on via the `mdadm`.
