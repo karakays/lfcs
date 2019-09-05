@@ -887,7 +887,7 @@ Next generation filesystems with roboust capabilities challenge the dominance of
 
 ### XXII. Encrypting disks
 
-LUKS is a disk encryption method at the block-device level. Linux Unified Key Setup is the standard method in Linux that provides this facility. LUKE is installed on top of `cryptsetup` utility.
+LUKS is a disk encryption method at the block-device level. Linux Unified Key Setup is the standard method in Linux that provides this facility. LUKS is installed on top of `cryptsetup` utility.
 
 #### cryptsetup
 `cryptsetup` command is to manage LUKS encrypted partitions.
@@ -895,11 +895,15 @@ LUKS is a disk encryption method at the block-device level. Linux Unified Key Se
 `cryptsetup [options...] <action> <action args>`
 
 1. `luksFormat` action initializes LUKS partition. It sets the symmetric key.
+
     `sudo cryptosetup luksFormat /dev/sda2`
 2. `luksOpen` creates a device mapper whose name is provided as action argument. `luksOpen` asks for the secret before creating device mapper. The device mapper is located at `/dev/mapper/name`.
+
     `sudo cryptosetup luksOpen /dev/sda2 name`
 3. Use the device as if it were unencrypted partition. Format filesystem first and mount
+
     `sudo mkfs.ext4 /dev/mapper/name` 
+
     `sudo mount /dev/mapper/name /mnt` 
 ```
 NAME             FSTYPE      LABEL  UUID                                 MOUNTPOINT
@@ -910,15 +914,23 @@ sda
 ```
 
 4. When done, unmount it and remove the mapping with `luksClose`.
+
     `sudo umount /dev/mapper/name`
+
     `sudo cryptsetup luksClose /dev/mapper/name`
 
 ##### Mounting at boot
 To mount an encrypted partition at boot time, add a normal entry to /etc/fstab. /etc/fstab is not aware that device is encrypted.
-/dev/mapper/name /mnt ext4 defaults 0 0
+
+```
+/dev/mapper/my-luks-dev /mnt ext4 defaults 0 0
+```
+
 Add entry to /etc/crypttab to specify mapping. <target> is mapped device name, source is actual block device which can be device file, uuid or label. If <key-file> is omitted, secret will be asked from the console.
-<target> <source> [<key-file>]
-name /dev/sda
+
+```
+my-luks-dev /dev/sda1 luks-secret-file
+```
 
 Swap partitions can be encrypted, too.
 
