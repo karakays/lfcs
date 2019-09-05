@@ -899,34 +899,34 @@ LUKS is a disk encryption method at the block-device level. Linux Unified Key Se
     `sudo cryptosetup luksFormat /dev/sda2`
 2. `luksOpen` creates a device mapper whose name is provided as action argument. `luksOpen` asks for the secret before creating device mapper. The device mapper is located at `/dev/mapper/name`.
 
-    `sudo cryptosetup luksOpen /dev/sda2 name`
+    `sudo cryptosetup luksOpen /dev/sda2 my-luks-dev`
 3. Use the device as if it were unencrypted partition. Format filesystem first and mount
 
-    `sudo mkfs.ext4 /dev/mapper/name` 
+    `sudo mkfs.ext4 /dev/mapper/my-luks-dev` 
 
-    `sudo mount /dev/mapper/name /mnt` 
+    `sudo mount /dev/mapper/my-luks-dev /media/karakays/usb1` 
 ```
 NAME             FSTYPE      LABEL  UUID                                 MOUNTPOINT
 sda
 ├─sda1           crypto_LUKS        42a2b0ea-19f8-47a9-af1e-930464c7ed2d
-│ └─my-luks-disk ext4               3cc849f2-984c-48cc-93e6-806a1d9f83da /media/karakays/usb
+│ └─my-luks-dev ext4               3cc849f2-984c-48cc-93e6-806a1d9f83da /media/karakays/usb1
 └─sda2           ext4               a2fcd826-29de-435e-98af-696e1f707b03
 ```
 
 4. When done, unmount it and remove the mapping with `luksClose`.
 
-    `sudo umount /dev/mapper/name`
+    `sudo umount /dev/mapper/my-luks-dev`
 
-    `sudo cryptsetup luksClose /dev/mapper/name`
+    `sudo cryptsetup luksClose /dev/mapper/my-luks-dev`
 
-##### Mounting at boot
-To mount an encrypted partition at boot time, add a normal entry to /etc/fstab. /etc/fstab is not aware that device is encrypted.
+#### Mounting at boot
+To mount an encrypted partition at boot time, add a normal entry to `/etc/fstab`. `/etc/fstab` is not aware that device is encrypted.
 
 ```
-/dev/mapper/my-luks-dev /mnt ext4 defaults 0 0
+/dev/mapper/my-luks-dev /media/karakays/usb1 ext4 defaults 0 0
 ```
 
-Add entry to /etc/crypttab to specify mapping. <target> is mapped device name, source is actual block device which can be device file, uuid or label. If <key-file> is omitted, secret will be asked from the console.
+Add entry to `/etc/crypttab` to specify mapping. `target` is mapped device name, `source` is actual block device which can be device file, uuid or label. If `key-file` is omitted, secret will be asked from the console.
 
 ```
 my-luks-dev /dev/sda1 luks-secret-file
@@ -936,35 +936,48 @@ Swap partitions can be encrypted, too.
 
 ### XXIII. LVM
 
-Logical Volume Management is about grouping physical partitions together from one or more devices into a big logical volume group. This volume pool is subdivided into logical volumes of which each mimics a physical disk partition to the system. A filesystem is places in a logical volume and ultimately, volume gets mounted to be accessible.
+Logical Volume Management enables to create a filesystem that spans out into multiple disk partitions. Physical layer is abstracted by the LVM. This is done through grouping physical partitions together from one or more devices into a big `volume group`. This volume pool is subdivided into `logical volume`s of which each mimics a physical disk partition to the system. A filesystem is placed in a logical volume and ultimately, volume gets mounted to be accessible. 
 
 Advantages:
     * Room for parallelization improvements with data striping (spreading out a filesystem to more than one disk, i.e. a logical volume spread to more one disk)
     * Logical volumes can be easily resized even if it already contains a filesystem.
 
-[](https://lms.quickstart.com/custom/799658/images/LVM_Components_large%20(1).png)
+![](https://lms.quickstart.com/custom/799658/images/LVM_Components_large%20(1).png)
 
-#####  Manage _physical volumes_ via pv* tools
-`pvcreate`: Convert a partition to physical volume. Refer to a physical partitition directly.
-    ```pvcreate /dev/sda7```
-`pvdisplay`: List physical volumes
-`pvmove`: Moves data from one physical volume to the others
-`pvremove`: Removes physical volume
+####  Manage _physical volumes_ via pv* tools
+* `pvcreate`: Convert a partition to physical volume. Refer to a physical partitition directly.
 
-##### Manage _volume groups_ via vg* tools
-`vgcreate`: Create volume group. Refer to a physical volumes to include. Creates /dev/myvg device file.
-    ```vgcreate myvg /dev/sda7```
-`vgextend`: Extend volume group. Refer to a physical volumes when extending
-    ```vgextend <pv2>```
-`vgreduce`: Shrinks volume group
+    `pvcreate /dev/sda7 /dev/sdb3`
 
-##### Manage _logical volumes_ via lv* tools
-`lvcreate`: Create a logical volume in `/dev/myvg/mylv`
-    ```lvcreate -L 50G -n mylv vg```
-    ```mkfs.ext4 /dev/myvg/mylv```
-`lvdisplay`: list logical volumes
+* `pvdisplay`: List physical volumes
+* `pvmove`: Moves data from one physical volume to the other
+* `pvremove`: Removes physical volume from a partition
 
-Steps in creating a logical volume
+#### Manage _volume groups_ via vg* tools
+* `vgcreate`: Create volume group. Refer to a physical volumes to include. Creates /dev/myvg device file.
+
+    `vgcreate myvg /dev/sda7 /dev/sdb3`
+
+* `vgextend`: Add physical volumes into a VG.
+
+    ```vgextend <vg> <pv1>...```
+
+* `vgreduce`: Remove physical volumes from a VG.
+
+    ```vgremove <vg> <pv1>...```
+
+#### Manage _logical volumes_ via lv* tools
+A logical volume is always bound to a volume group.
+
+* `lvcreate`: Creates a logical volume in the specified volume group. A device node is created under volume group `/dev/myvg/mylv01`.
+
+    `lvcreate -L 50G -n mylv01 myvg`
+
+    `mkfs.ext4 /dev/myvg/mylv01`
+
+* `lvdisplay`: list logical volumes
+
+##### Steps in creating a logical volume
 
 1. Create physical volumes from partitions, 1-to-1 mapping
 2. Create a volume group by including physical volumes 
@@ -973,23 +986,30 @@ Steps in creating a logical volume
 4. Format a logical volume via mkfs
 5. Mount the logical volume
 
-##### Resizing a logical volume
-Resizing can be done even if lv contains a filesystem.
-* lvextend
-* lvreduce
-* resize2fs
-* lvresize
+#### Resizing a logical volume
+Resizing can be done even if lv contains a filesystem. In this case, however, filesystem needs to resized separately.
+
+* `lvextend`
+* `lvreduce`
+* `resize2fs`
+* `lvresize`
 
 To expand a lv, volume, first, needs expanded, then the filesystem.
+
 ```lvextend -L +500M /dev/vg/mylvm```
+
 ```resize2fs /dev/vg/mylvm```
 
 To shrink a volume, first shrink the filesystem then the volume.
+
 ```resize2fs /dev/vg/mylvm 200M```
+
 ```lvreduce -L -200MB /dev/vg/mylvm```
 
-`-r` option in `lvresize` command does this automatically by resizing both the volume and filesystem.
-```lvresize -r -L 20 GB /dev/VG/mylvm```
+##### `lvresize`
+`-r` option in `lvresize` command does this automatically by resizing both the volume and filesystem. `-L` option to set absolute size or use [+|-] to set relative size changes.
+
+`lvresize -r -L 20 GB /dev/VG/mylvm`
 
 #### LVM snapshots
 A snapshot of an existing logical volume is useful for backup, app testing or deployin VMs etc.
