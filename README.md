@@ -2,7 +2,7 @@
     <img alt="lfcs-logo" src="https://training.linuxfoundation.org/wp-content/uploads/2018/01/logo_lfcs.png"/>
 </p>
 
-This repository contains my personal notes that I take during preparation for [Linux Foundation Certified SysAdmin](https://training.linuxfoundation.org/certification/linux-foundation-certified-sysadmin-lfcs/) exam on. 
+This repository contains my personal notes that I take on during preparation for [Linux Foundation Certified SysAdmin](https://training.linuxfoundation.org/certification/linux-foundation-certified-sysadmin-lfcs/) exam.
 
 ## Table of contents
 
@@ -1050,35 +1050,46 @@ Linux is the kernel and includes libraries and applications that interact with t
 
 #### kernel command line
 
-`kernel command line` is the command to get the `kernel` started. Parameters can be passed to kernel when it boots 
+`kernel command line` is the command to get the `kernel` started and found in `/boot/grub/grub.cfg`. Any options not understood are are passed to `init`. Available options can be found in `man bootparam`.
 
 ```linux /boot/vmlinuz-4-19.0 root=<uuid> ro quiet```
-
-Kernal command line is found in `/boot/grub/grub.cfg` and is here to pass start up options. Any options not understood are are passed to `init`. Available options can be found in `man bootparam`.
 
 * root = root filesystem, can be `device node` or UUID
 * ro  = mount root read-only
 * quiet = less verbose logging
 * LANG = system language
 
-#### `sysctl`
-`sysctl` is to tune kernel and also system parameters at runtime. Parameters are in key = value format. To list all parameters
+#### kernel options and paramters
 
-`sysctl -a`
+Parameters are passed as `key=value` format. Kernel options are separated by spaces. There are two types of kernel parameters
+
+1. boot (start-up) parameters
+    - set during boot by editing `kernel cmdline` through `GRUB` 
+2. runtime parameters
+    - set via `sysctl`
+
+#### `sysctl`
+`sysctl` is to tune kernel and also system parameters at runtime. Parameters are in key = value format. To list runtime parameters
+
+```
+sysctl -a
 kernel.pid_max = 111
 net.ipv4.forward = 1
 net/ipv4.icmp_echo_ignore_all=0
 vm.swapiness = 30
+...
+```
 
-To get one parameter,
+To print a single kernel parameter
+
 `sysctl kernel.pid_max`
 
-Each key corresponds to a `pseudofile under` `/proc/sys/key` and parameter value is the file content, e.g. `kernel.pid_max` value can be found in file `/proc/sys/kernel/pid_max`.
+Each key corresponds to a `pseudofile under` `/proc/sys/key` and its file content corresponds to parameter value, e.g. `kernel.pid_max` value can be found in file `/proc/sys/kernel/pid_max`.
 To set a parameter, either write to corresponding file or
 
 `sudo sysctl net.ipv4.forward=1`
 
-`/etc/sysctl.conf` contains parameters that are read and set during boot. To apply current configuration, simply modify some variables if need be and apply
+`/etc/sysctl.conf` contains parameters that are applied during boot. To make current runtime parameters permanent, add it to `sysctl.conf`. To apply the current configuration set without a reboot
 
 `sudo sysctl -p`
 
