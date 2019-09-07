@@ -1073,13 +1073,12 @@ Parameters are passed as `key=value` format. Kernel options are separated by spa
 
 ```
 sysctl -a
-kernel.pid_max = 111
-net.ipv4.forward = 1
+kernel.pid_max=111
+net.ipv4.forward=1
 net/ipv4.icmp_echo_ignore_all=0
-vm.swapiness = 30
+vm.swapiness=30
 ...
 ```
-
 To print a single kernel parameter
 
 `sysctl kernel.pid_max`
@@ -1089,39 +1088,45 @@ To set a parameter, either write to corresponding file or
 
 `sudo sysctl net.ipv4.forward=1`
 
+##### `sysctl.conf`
+
 `/etc/sysctl.conf` contains parameters that are applied during boot. To make current runtime parameters permanent, add it to `sysctl.conf`. To apply the current configuration set without a reboot
 
 `sudo sysctl -p`
 
 ### XXVI. Kernel modules
 
-Kernel `modules` are facilities that can be loaded or unloaded at runtime and they do not require a system restart to function. Modules are mostly device drivers but also could be a custom network protocol or a filesystem etc. It's responsibility of the distribution to include driver modules for every device that the system needs.
-Once a `module` is loaded, it becomes a fully funcitonal native part of the monolithic kernel, with few restrictions.
+Linux retains _monolithic_ architecture. Kernel `modules` are facilities that can be loaded or unloaded at runtime. Modules are mostly device drivers but also could be a custom network protocol (tcp, ip, iptables) or a filesystem (ext4, vfat) etc. It's responsibility of the distribution to include driver modules for every device model, filesystems etc.
+Once a module is loaded, it becomes a fully funcitonal native part of the monolithic kernel, with few restrictions. Modules might depend on each other and can be used by one or more processes at a time.
 
-#### Module utilities
+#### Utilities
 
-Modules have `*.ko` file extension and can be found in `/lib/modules/<kernel-version>/`. Modules depend on a specific kernel version during build time. A modules can be used by one or more other modules.
+Modules have `*.ko` file extension and can be found in `/lib/modules/<kernel-version>/`. Modules are built with a specific kernel version. A modules can also be used by one or more other modules.
 
 List loaded modules also displaying # of processes using the module and its dependants,  
+
 `lsmod`
 
-Load a module directly,  
-`insmod` <modulename>
+##### `modprobe`
+Load or unload a modules with dependency management for both load and unload.
 
-Unload a module directly,  
-`rmmod` <modulename>
-
-Load or unload a modules with dependency management,
 `modprob <modulename>`
 `modprob -r <modulename>`
 
-Rebuild the module dependency database,  
+Load a module straight,
+
+`insmod <modulename>`
+
+Unload a module straight. It's not possible to unload if the module is used by another module or by a process. 
+`rmmod <modulename>`
+
+Generate or update module dependency db,
+
 `depmod`
 
 Display module details such as version, module dependencies, supported hardwares, what parameters can be supploed during loading etc.
-`modinfo` <modulename>
 
-#### Module utilities
+`modinfo <modulename>`
 
 Modules can be loaded specifying parameters
 
