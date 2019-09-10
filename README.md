@@ -598,10 +598,13 @@ sysfs   | /sys |
 ### XVII. Disk partitioning
 
 Common disk types
-* SATA
-* SCSI
+* HDD
 * USB
 * SSD
+
+Common drive (bus) types
+* SATA
+* SCSI
 
 Device naming scheme `/dev/sd{order}{partition}`
 * `/dev/sd\*` is the entire disk device file which could be of type SCSI, SATA or USB. Following letter identifies the order, `/dev/sda` is the first device, `/dev/sdb` the second etc. The number refers to partition number, `/dev/sda2` is the second partition on `/dev/sda`.
@@ -1055,15 +1058,17 @@ Character and block devices have filesystem entries associated with them which a
 ![Network devices have no device nodes](https://lms.quickstart.com/custom/799658/images/device_node_small.png)
 
 #### Major and minor numbers
-Major and minor numbers are used to identify the device driver that a `device node` is using. They appear in `ls` output where file size would show for normal files. Below, `8, 0` is the major/minor versions.
+Major and minor numbers are used to identify the device driver that a `device node` is using. It's a POSIX standard. While a major number identifies device driver, minor number represents different device of the same type. They appear in `ls` output where file size would show for normal files. Below, `8, 0` is the major/minor versions.
 
-`$ ll /dev/sda`
-`brw-rw---- 1 root 8, 0 Aug  6 20:46 /dev/sda`
+```
+$ ll /dev/sda
+brw-rw---- 1 root 8, 0 Aug  6 20:46 /dev/sda
+```
 
 #### `udev`
 Managing all device nodes in `/dev` had become difficult as Linux evolved. Distributions had to create all kinds of device nodes by default (most of them were not used at all) because they can never be sure which hw would be present on system. This resulted around 20k device nodes and subdirectories during kernel version 2.4 series.
 
-`udev` method creates device nodes on demand which prevents to have a ton of device nodes that never be used. Upon kernel initial boot, `/dev/` directory is empty. `initramfs` image contains preliminary devices nodes. `u` stands for user indicating `device node` operations done in user space. 
+`udev` is to generate device nodes dynamically. `u` stands for user indicating `device node` operations done in user space. 
 
 #### Discovering devices
 `udev` runs as a daemon and monitors `netlink` socket for device events. If a device is plugged-in or removed, `uevent` sends a message and `udev` takes appropriate action like
@@ -1072,41 +1077,58 @@ Managing all device nodes in `/dev` had become difficult as Linux evolved. Distr
 * file permissions
 * initialize and make device available
 
-#### `udev` rules
-Main configuration file is `/etc/udev/udev.conf`. It contains details such as where to create device nodes, default permissions, ownership etc. Rules are located in `/etc/udev/rules.d/` and have `*.rules` extension. A rule file can have multiple rule statements in lines. The rule format is as follows  
+Upon kernel boot, `/dev/` directory is empty. `initramfs` image contains preliminary devices nodes such as integrated disk drives, memory, etc. Initial device nodes are created based on this.
+
+#### `udev.conf` and rules
+Main configuration file is `/etc/udev/udev.conf`. It contains details such as where to create device nodes, default permissions, ownership etc. Rules are located in `/lib/udev/rules.d` (global) and `/etc/udev/rules.d/` (local) with higher precedence. All `*.rules` are collectively sorted and processed in lexical order.
+
+A rule file can have multiple rule statements in lines. A rule statement is made of key-value pairs. There are two types of keys
+* Match keys
+* Assignment keys
 
 `<match>==<value> [, ...] <assignment>=<value> [, ...]`
 
-where first part is of one or more match pairs with `==` to match a device and second part is key -value assignments applied to device node. If no match found, then no rule is executed. A rule which matches `USB` devices by vendor with id 0781 and applies some assignments.  
+Rule gets applied if all match keys match against their values. If no rule is matched, default device attributes are used.
 
-```SUBSYSTEM=="usb", ATTR={idVendor}=="0781", SYMLINK+="myusb", MODE="0666"```
+```
+SUBSYSTEM=="usb", ATTR={idVendor}=="0781", SYMLINK+="myusb", MODE="0666"
+```
 
 ### XXVIII. Virtualization
 
 Virtualization is about replacement of physical resource by an abstraction layer. In terms of virtualizing an entire OS, it's a virtual machine (VM) running under a hypervisor. A VM is a virtualized instance of an entire OS to create an isolated environment.
-Virtualization is transparent to the applications running in virtual machine and to the outer world.
 
-Virtualization can also be applied to
+#### Rationale
+* Efficient use of hardware
+* Software isolation
+* Isolated development environment
+* Run multiple OS without rebooting
+
+Other types of virtualization
 * Network - Software Defined Networking.
 * Storage - Network Attached Storage. 
 * Application - Container
 
-Host is the physical OS managing one or more VMs. Guest is the VM that is an instance of a complete OS. Guest shouldn't care what host it's running on.
+#### Terms
+
+Host is the physical OS managing one or more VMs. Guest is the VM that is an instance of a complete OS.
 
 Emulator is an application running in an OS that appears to another OS or application as a specific hardware. It's a software that replaces hardware constructs, it simulates the behaviour of a HW.
 
-`Hypervisor`, aka `virtual maachine monitor` is responsible for initiating, managing and terminating guests. A VM is a self-container computer packed into a single file. But something needs to run that file. It sits between the physical hardware and VM to virtualize the hardware.
+`Hypervisor` is responsible for initiating, managing and terminating guests. A VM is a self-container computer packed into a single file. But something needs to run that file. It sits between the physical hardware and VM to virtualize the hardware.
 
 #### Types of virtualization
 
-* Hardware virtualization (full virtualization): Guest is not aware it's running in a virtual environment
+* Hardware virtualization (full virtualization): Guest is not aware it's running in a virtual environment. It requires CPUs with virtualization support.
 * Para-virtualization: Guest is aware it's running in a virtualized environment and is modified to work with it. There is no full-fledged hardware virtualization.
 
-Intel (VT) and AMD (AMD-V) virtualization extensions allow hypervisor to run VMs in full virtz.
+#### Hypervisor types
 
-A hypervisor can be external or internal to the host operating system kernel.
-* type i - hosted hypervisor: VM have no direct accesss to hardware, it goes through host system which lowers VM performance. Third-party programs required such as VMWare, VirtualBox etc.
-* type ii - bare-metal: VM can access hardware directly so better performance. KVM runs as a kernel module that provides virtualization.
+* type i - bare-metal (native): It runs directly on the hardware, no host OS inbetween. As a result, VMs can access hardware directly so better performance. Examples: VMware vSphere, kvm, Microsoft Hyper-V
+![](https://phoenixnap.com/kb/wp-content/uploads/2018/12/type-1-hypervisors.png)
+
+* type ii - hosted hypervisor: It runs on the host OS as a process. VM have no direct accesss to hardware, it goes through host system which lowers VM performance. Examples: Oracle VirtualBox, VMware Workstation
+![](https://phoenixnap.com/kb/wp-content/uploads/2018/12/type-2-hypervisors.png)
 
 `libvirt` is the library that provides management of virtual machines, virtual networks, virtual storage. Tools such as
 `virt-manager, `virt-viewer`, `virt-install`, `virsh` use this library.
@@ -1118,7 +1140,7 @@ Quick EMulator is hypervisor that also performs CPU hardware emulation. QEMU can
 * Oracle VirtualBox
 
 #### KVM
-KVM is the full-virtualization solution for Linux on CPUs with VT or AMD-V support. KVM is a loadable module `kvm.ko` that runs the VMM on one or more CPUs.
+KVM is a hypervisor as a kernel module. It's of type i with full-virtualization capabilities.
 
 ![KVM w/ QEMU](https://upload.wikimedia.org/wikipedia/commons/thumb/4/40/Kernel-based_Virtual_Machine.svg/800px-Kernel-based_Virtual_Machine.svg.png)
 
