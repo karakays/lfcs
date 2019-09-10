@@ -2,7 +2,7 @@
     <img alt="lfcs-logo" src="https://training.linuxfoundation.org/wp-content/uploads/2018/01/logo_lfcs.png"/>
 </p>
 
-This repository contains my personal notes that I take during preparation for [Linux Foundation Certified SysAdmin](https://training.linuxfoundation.org/certification/linux-foundation-certified-sysadmin-lfcs/) exam on. 
+This repository contains my personal notes that I take on during preparation for [Linux Foundation Certified SysAdmin](https://training.linuxfoundation.org/certification/linux-foundation-certified-sysadmin-lfcs/) exam.
 
 ## Table of contents
 
@@ -593,7 +593,15 @@ proc    | /proc |
 tmpfs   | Anywhere | file storage in RAM
 sysfs   | /sys |
 
-```df [file]... # disk space on all mounted filesystems```
+#### Disk free
+
+See disk usage on all mounted filesystems
+
+```df```
+
+See disk usage of filsystem where <file> resides```
+
+```df <file>```
 
 ### XVII. Disk partitioning
 
@@ -630,6 +638,7 @@ Disk is divided into contiguous groups of sectors called partitions. Partitionin
 * easier backups
 * performance and security enhancement on certain parts
 * swap can be isolated
+
 A partition is associated with
 * type: primary, extended or logical
 * start: start sector
@@ -720,26 +729,31 @@ is equivalent to ```mkfs.ext4 [devnode]```
 Check and fix filesystem error with ```fsck```. It should only run on unmounted systems.
 
 ```sudo fsck -t [fs] [device-file]```
+
 equivalent to ```sudo fsck.ext4 [device-file]```
 
 _journaling_ filesystems are much faster to check than older systems because not the whole filesystem needs to be checked only last failed transactions.
 
 #### Mounting filesystem
-In Linux, all files are accessible from the root tree `/`. A filesystem needs to be attached to the root `/` before it can be accessed. Be the filesystem in a remote device, USB etc.Mounting is always related with the filesystem rather then the disk device itself directly.
+In Linux, all files are accessible from the root tree `/`. A filesystem needs to be attached to the root `/` before it can be accessed. Be the filesystem in a remote device, USB etc. Mounting is always related with the filesystem rather then the disk device itself directly.
 
-```mount [target] [mount-point]``` and ```umount [mount-point]``` to unmount. Mount point directory needs to exist before. Non-empty directories can be used as mount points.
+```mount [target] [mount-point]``` and ```umount [mount-point]``` to unmount. **Mount point directory needs to exist before**. Non-empty directories can be used as mount points.
 
-[target] can be a device-node, a partition label/UUID or filesystem labbel/UUID. device-node can change at boot time (based on which device picked up first) and labels do not force unique names. UUIDs are reliable because they are unique and consistent. Filesystem UUIDs are generated when creating (format) a filesystem.
+[target] can be a device-node, a partition label/UUID or filesystem label/UUID. device-node can change at boot time (based on which device picked up first) and labels do not force unique names. UUIDs are reliable because they are unique and consistent. Filesystem UUIDs are generated when creating (format) a filesystem.
 
-```mount UUID=<fs-uuid> /mount-point```
-```mount LABEL=<fs-label> /mount-point```
+```mount UUID=<fs-uuid> /mount-point```  
+```mount LABEL=<fs-label> /mount-point```  
+```mount PARTUUID=<part-uuid> /mount-point```  
+```mount PARTLABEL=<part-label> /mount-point```  
 
--t option for filesystem, optional `mount` can detect a filesystem.
+`-t` option for filesystem, is optional `mount` can detect a filesystem.
 
 List all mounted filesystems
+
 `mount -l`
 
 ```unmount [devicel-file | mount-point]```
+
 If any terminal is open or any process is working in the mountpoint, unmount will fail with `target is busy error`.
 
 #### Network shares
@@ -749,45 +763,62 @@ Mount remote filesystem with same `mount` command and work locally. The most com
 
 #### Mounting at boot
 ```mount -a``` is used to mount all filesystems specified in `/etc/fstab`. Filesystems are mount as in their order in `fstab`. It contains space-separated values and also describes who may mount with what permissions. During boot time, `mount -a` is executed.
+
 ```<device, uuid, label> <mount-point> <type> <options in csv> <fsck pass or not>```
 
 #### Automatic mount
-You can let filesystems mount automatically when they are accessed. _systemd_ has built-in support for that using `/etc/fstab` file. This saves you extra mount commands.
+You can let filesystems mount automatically at the moment they are accessed. _systemd_ has built-in support for that using `/etc/fstab` file. This saves you extra `mount` commands.
 
-```\# sample entry in /etc/fstab
+```
+\# sample entry in /etc/fstab
 LABEL=yubikey /mount ext4 noauto,x-systemd.automount,x-systemd.device-timeout=10,x-systemd.idle-timeout=30
 ```
-noauto to disable auto mounting at boot. x-systemd.automount indicates systemd automount facility used. idle-timeout lets filesystem umount automaticaly after it stays idle timeout.
+`noauto` to disable auto mounting at boot. `x-systemd.automount` indicates systemd automount facility used. `idle-timeout` lets filesystem umount automaticaly after it stays idle timeout.
 
 ### XIX. Filesystem features
 
 #### Swap
 
-* Most memory is used to cache file contents to prevent going to the disk more than necessary._Such _pages_ are never swapper out_. _dirty pages_ (file content in memory != of in disk) are flushed out to disk.
+* Most memory is used to cache file contents to prevent going to the disk more than necessary. _Such _pages_ are never swapped out_. _dirty pages_ (file content in memory != of in disk) are flushed out to disk.
 
 * Memory use by Linux kernel never swapped out!
 
 `mkswap device [size]` to set up a swap are in a device or _file_ given.
+
 `swapon [device/file...]` to enable swapping on device given.
+
 `swapoff [device/file...]` to disable swapping on device given.
 
 #### Filesystem quotas
-Disk quotas control maximum space particular users can have on the disk. It works on a mounted filesystem basis.
+Disk quotas control maximum space particular users can have on the disk. Quotas are based per filesystem basis. There are limits on number of blocks and inodes. These limits are expressed as soft and hard limits. Hard limits can never be exceeded. Soft limits can be exceeded for a grace period.
 
-* To create quota, filesystem must be mounted with `usrquota` or `grpquota` options.
+1. To create a quota, filesystem must be mounted with `usrquota` or `grpquota` options.
 
-* `quotacheck` generates quota accounting files at root of quoted filesystem i.e. aquota.user, aquota.group
+`sudo mount -o usrquota /dev/sda1`
 
-* `quotaon` and `quotaoff` to enable/disable quoting on a per filesystem basis.
+2. `quotacheck` generates quota accounting files initially. This is stored in root of quoted filesystem i.e. `aquota.user`, `aquota.group`. Such files must exist for quota operations.
 
-* `quota` used to report on quotas. -u and -g options for current user/group. root can query any user's quota.
+`sudo quotacheck -v /media/usb`
 
-```sudo quota alice     # quora report of alice```
+`quotacheck` is also used to update quota file.
 
-##### Setting up quotas
-edquota is the quota editor to set it up. There are limits on blocks and on inodes. Limits are specified as soft and hard limits where hard limits can never be exceeded. Soft limits can be exceeded for a grace period. Grace periods are set per filesystem.
+3. Turn on quotas
 
-```edquota -u alice``` to edit limits of a user.
+`sudo quotaon -v /media/usb`
+
+4. Set up quotas per user or group
+
+`sudo edquota <user>`
+
+In the quota editor, only soft and hard limits can be edited, other fields are informational only.
+
+To change grace period,
+
+`sudo edquota -t`
+
+5. To query quota information of current user, type
+
+`quota`
 
 ##### `df`
 `disk free` lists all filesystems mounted, mountpoints and available space on each.
@@ -859,65 +890,97 @@ Next generation filesystems with roboust capabilities challenge the dominance of
 
 ### XXII. Encrypting disks
 
-Encryption at the block device level provides strong protection. Linux Unified Key Setup is the standard method in Linux that provides this facility. LUKE is installed on top of `cryptsetup` utility.
+LUKS is a disk encryption method at the block-device level. Linux Unified Key Setup is the standard method in Linux that provides this facility. LUKS is installed on top of `cryptsetup` utility.
 
-##### cryptsetup
-`cryptsetup` is to manage LUKS encrypted partitions.
-```cryptsetup [options...] <action> <action args>```
+#### cryptsetup
+`cryptsetup` command is to manage LUKS encrypted partitions.
 
-Format the partition with LUKS and sets a symmetric secret. This is done only once.
-```sudo cryptosetup luksFormat /dev/sda2```
-Make partition unencrypt and available to use, asks for secret interactively.
-luksOpen creates a mapping from which the partition will be available. The device will be located at /dev/mapper/name.
-```sudo cryptosetup luksOpen /dev/sda2 name```
-From now on, use the device as if it were unencrypted partition.
-Format filesystem first and mount
-```sudo mkfs.ext4 /dev/mapper/name``` 
-```sudo mount /dev/mapper/name /mnt``` 
-When done, unmount it and remove the mapping with luksClose.
-```sudo umount /dev/mapper/name``` 
-```sudo cryptsetup lukeClose /dev/mapper/name```
+`cryptsetup [options...] <action> <action args>`
 
-##### Mounting at boot
-To mount an encrypted partition at boot time, add a normal entry to /etc/fstab. /etc/fstab is not aware that device is encrypted.
-/dev/mapper/name /mnt ext4 defaults 0 0
-Add entry to /etc/crypttab to specify mapping. <target> is mapped device name, source is actual block device which can be device file, uuid or label. If <key-file> is omitted, secret will be asked from the console.
-<target> <source> [<key-file>]
-name /dev/sda
+1. `luksFormat` action initializes LUKS partition. It sets the symmetric key.
+
+    `sudo cryptosetup luksFormat /dev/sda2`
+2. `luksOpen` creates a device mapper whose name is provided as action argument. `luksOpen` asks for the secret before creating device mapper. The device mapper is located at `/dev/mapper/name`.
+
+    `sudo cryptosetup luksOpen /dev/sda2 my-luks-dev`
+3. Use the device as if it were unencrypted partition. Format filesystem first and mount
+
+    `sudo mkfs.ext4 /dev/mapper/my-luks-dev` 
+
+    `sudo mount /dev/mapper/my-luks-dev /media/karakays/usb1` 
+```
+NAME             FSTYPE      LABEL  UUID                                 MOUNTPOINT
+sda
+├─sda1           crypto_LUKS        42a2b0ea-19f8-47a9-af1e-930464c7ed2d
+│ └─my-luks-dev ext4               3cc849f2-984c-48cc-93e6-806a1d9f83da /media/karakays/usb1
+└─sda2           ext4               a2fcd826-29de-435e-98af-696e1f707b03
+```
+
+4. When done, unmount it and remove the mapping with `luksClose`.
+
+    `sudo umount /dev/mapper/my-luks-dev`
+
+    `sudo cryptsetup luksClose /dev/mapper/my-luks-dev`
+
+#### Mounting at boot
+To mount an encrypted partition at boot time, add a normal entry to `/etc/fstab`. `/etc/fstab` is not aware that device is encrypted.
+
+```
+/dev/mapper/my-luks-dev /media/karakays/usb1 ext4 defaults 0 0
+```
+
+Add entry to `/etc/crypttab` to specify mapping. `target` is mapped device name, `source` is actual block device which can be device file, uuid or label. If `key-file` is omitted, secret will be asked from the console.
+
+```
+my-luks-dev /dev/sda1 luks-secret-file
+```
 
 Swap partitions can be encrypted, too.
 
 ### XXIII. LVM
 
-Logical Volume Management is about grouping physical partitions together from one or more devices into a big logical volume group. This volume pool is subdivided into logical volumes of which each mimics a physical disk partition to the system. A filesystem is places in a logical volume and ultimately, volume gets mounted to be accessible.
+Logical Volume Management enables to create a filesystem that spans out into multiple disk partitions. Physical layer is abstracted by the LVM. This is done through grouping physical partitions together from one or more devices into a big `volume group`. This volume pool is subdivided into `logical volume`s of which each mimics a physical disk partition to the system. A filesystem is placed in a logical volume and ultimately, volume gets mounted to be accessible. 
 
 Advantages:
     * Room for parallelization improvements with data striping (spreading out a filesystem to more than one disk, i.e. a logical volume spread to more one disk)
     * Logical volumes can be easily resized even if it already contains a filesystem.
 
-[](https://lms.quickstart.com/custom/799658/images/LVM_Components_large%20(1).png)
+![](https://lms.quickstart.com/custom/799658/images/LVM_Components_large%20(1).png)
 
-#####  Manage _physical volumes_ via pv* tools
-`pvcreate`: Convert a partition to physical volume. Refer to a physical partitition directly.
-    ```pvcreate /dev/sda7```
-`pvdisplay`: List physical volumes
-`pvmove`: Moves data from one physical volume to the others
-`pvremove`: Removes physical volume
+####  Manage _physical volumes_ via pv* tools
+* `pvcreate`: Convert a partition to physical volume. Refer to a physical partitition directly.
 
-##### Manage _volume groups_ via vg* tools
-`vgcreate`: Create volume group. Refer to a physical volumes to include. Creates /dev/myvg device file.
-    ```vgcreate myvg /dev/sda7```
-`vgextend`: Extend volume group. Refer to a physical volumes when extending
-    ```vgextend <pv2>```
-`vgreduce`: Shrinks volume group
+    `pvcreate /dev/sda7 /dev/sdb3`
 
-##### Manage _logical volumes_ via lv* tools
-`lvcreate`: Create a logical volume in `/dev/myvg/mylv`
-    ```lvcreate -L 50G -n mylv vg```
-    ```mkfs.ext4 /dev/myvg/mylv```
-`lvdisplay`: list logical volumes
+* `pvdisplay`: List physical volumes
+* `pvmove`: Moves data from one physical volume to the other
+* `pvremove`: Removes physical volume from a partition
 
-Steps in creating a logical volume
+#### Manage _volume groups_ via vg* tools
+* `vgcreate`: Create volume group. Refer to a physical volumes to include. Creates /dev/myvg device file.
+
+    `vgcreate myvg /dev/sda7 /dev/sdb3`
+
+* `vgextend`: Add physical volumes into a VG.
+
+    ```vgextend <vg> <pv1>...```
+
+* `vgreduce`: Remove physical volumes from a VG.
+
+    ```vgremove <vg> <pv1>...```
+
+#### Manage _logical volumes_ via lv* tools
+A logical volume is always bound to a volume group.
+
+* `lvcreate`: Creates a logical volume in the specified volume group. A device node is created under volume group `/dev/myvg/mylv01`.
+
+    `lvcreate -L 50G -n mylv01 myvg`
+
+    `mkfs.ext4 /dev/myvg/mylv01`
+
+* `lvdisplay`: list logical volumes
+
+##### Steps in creating a logical volume
 
 1. Create physical volumes from partitions, 1-to-1 mapping
 2. Create a volume group by including physical volumes 
@@ -926,23 +989,30 @@ Steps in creating a logical volume
 4. Format a logical volume via mkfs
 5. Mount the logical volume
 
-##### Resizing a logical volume
-Resizing can be done even if lv contains a filesystem.
-* lvextend
-* lvreduce
-* resize2fs
-* lvresize
+#### Resizing a logical volume
+Resizing can be done even if lv contains a filesystem. In this case, however, filesystem needs to resized separately.
+
+* `lvextend`
+* `lvreduce`
+* `resize2fs`
+* `lvresize`
 
 To expand a lv, volume, first, needs expanded, then the filesystem.
+
 ```lvextend -L +500M /dev/vg/mylvm```
+
 ```resize2fs /dev/vg/mylvm```
 
 To shrink a volume, first shrink the filesystem then the volume.
+
 ```resize2fs /dev/vg/mylvm 200M```
+
 ```lvreduce -L -200MB /dev/vg/mylvm```
 
-`-r` option in `lvresize` command does this automatically by resizing both the volume and filesystem.
-```lvresize -r -L 20 GB /dev/VG/mylvm```
+##### `lvresize`
+`-r` option in `lvresize` command does this automatically by resizing both the volume and filesystem. `-L` option to set absolute size or use [+|-] to set relative size changes.
+
+`lvresize -r -L 20 GB /dev/VG/mylvm`
 
 #### LVM snapshots
 A snapshot of an existing logical volume is useful for backup, app testing or deployin VMs etc.
@@ -951,13 +1021,14 @@ A snapshot of an existing logical volume is useful for backup, app testing or de
 
 ### XXIV. RAID
 
-Redundant Array of Independant Disks is clustering of physical disks to enable data integrity and recoverability. Disk IO activity is spread into the cluster. Data striping provides parallel writes that increases performance.
+RAID (Redundant Array of Independant Disks) is clustering of physical disks to promote data integrity and recoverability. Disk IO activity is spread into the cluster. Data striping provides parallel writes that increases performance.
 RAID can be implemented either in software or in hardware. Linux kernel supports software RAID. `mdadm` is the tool to create and manage software RAID devices.
 
-On the other hand, hardware RAID are transparent to OS.
-Features:
-* mirroring - storage clustering for availability
-* striping - splitting filesystems to more than one disk
+On the other hand, hardware RAID is transparent to OS.
+
+RAID provides:
+* mirroring - duplicate data for availability
+* striping - splitting filesystems to more than one disk to increase performance
 * parity - fault tolerant with extra data for error recovery
 
 #### RAID levels
@@ -970,7 +1041,8 @@ Raid levels increas by complexity.
 * RAID10: mirroring and strping.
 
 Create a software raid device
-```mdadm --create /dev/md0 --level=1 --raid-disks=2 /dev/sdb1 /dev/sdc1```
+
+`mdadm --create /dev/md0 --level=1 --raid-disks=2 /dev/sdb1 /dev/sdc1`
 
 #### Hot spare
 A hot spare is used as a failover mechanism. It is active in the cluster and is switched into operation when a disk fails. A hot spare can be created when creating RAID array or later on via the `mdadm`.
@@ -981,67 +1053,83 @@ Linux is the kernel and includes libraries and applications that interact with t
 
 #### kernel command line
 
-`kernel command line` is the command to get the `kernel` started. Parameters can be passed to kernel when it boots 
+`kernel command line` is the command to get the `kernel` started and found in `/boot/grub/grub.cfg`. Any options not understood are are passed to `init`. Available options can be found in `man bootparam`.
 
 ```linux /boot/vmlinuz-4-19.0 root=<uuid> ro quiet```
-
-Kernal command line is found in `/boot/grub/grub.cfg` and is here to pass start up options. Any options not understood are are passed to `init`. Available options can be found in `man bootparam`.
 
 * root = root filesystem, can be `device node` or UUID
 * ro  = mount root read-only
 * quiet = less verbose logging
 * LANG = system language
 
+#### kernel options and paramters
+
+Parameters are passed as `key=value` format. Kernel options are separated by spaces. There are two types of kernel parameters
+
+1. boot (start-up) parameters
+    - set during boot by editing `kernel cmdline` through `GRUB` 
+2. runtime parameters
+    - set via `sysctl`
+
 #### `sysctl`
-`sysctl` is to tune kernel and also system parameters at runtime. Parameters are in key = value format. To list all parameters
+`sysctl` is to tune kernel and also system parameters at runtime. Parameters are in key = value format. To list runtime parameters
 
-`sysctl -a`
-kernel.pid_max = 111
-net.ipv4.forward = 1
+```
+sysctl -a
+kernel.pid_max=111
+net.ipv4.forward=1
 net/ipv4.icmp_echo_ignore_all=0
-vm.swapiness = 30
+vm.swapiness=30
+...
+```
+To print a single kernel parameter
 
-To get one parameter,
 `sysctl kernel.pid_max`
 
-Each key corresponds to a `pseudofile under` `/proc/sys/key` and parameter value is the file content, e.g. `kernel.pid_max` value can be found in file `/proc/sys/kernel/pid_max`.
+Each key corresponds to a `pseudofile under` `/proc/sys/key` and its file content corresponds to parameter value, e.g. `kernel.pid_max` value can be found in file `/proc/sys/kernel/pid_max`.
 To set a parameter, either write to corresponding file or
 
 `sudo sysctl net.ipv4.forward=1`
 
-`/etc/sysctl.conf` contains parameters that are read and set during boot. To apply current configuration, simply modify some variables if need be and apply
+##### `sysctl.conf`
+
+`/etc/sysctl.conf` contains parameters that are applied during boot. To make current runtime parameters permanent, add it to `sysctl.conf`. To apply the current configuration set without a reboot
 
 `sudo sysctl -p`
 
 ### XXVI. Kernel modules
 
-Kernel `modules` are facilities that can be loaded or unloaded at runtime and they do not require a system restart to function. Modules are mostly device drivers but also could be a custom network protocol or a filesystem etc. It's responsibility of the distribution to include driver modules for every device that the system needs.
-Once a `module` is loaded, it becomes a fully funcitonal native part of the monolithic kernel, with few restrictions.
+Linux retains _monolithic_ architecture. Kernel `modules` are facilities that can be loaded or unloaded at runtime. Modules are mostly device drivers but also could be a custom network protocol (tcp, ip, iptables) or a filesystem (ext4, vfat) etc. It's responsibility of the distribution to include driver modules for every device model, filesystems etc.
+Once a module is loaded, it becomes a fully funcitonal native part of the monolithic kernel, with few restrictions. Modules might depend on each other and can be used by one or more processes at a time.
 
-#### Module utilities
+#### Utilities
 
-Modules have `*.ko` file extension and can be found in `/lib/modules/<kernel-version>/`. Modules depend on a specific kernel version during build time. A modules can be used by one or more other modules.
+Modules have `*.ko` file extension and can be found in `/lib/modules/<kernel-version>/`. Modules are built with a specific kernel version. A modules can also be used by one or more other modules.
 
 List loaded modules also displaying # of processes using the module and its dependants,  
+
 `lsmod`
 
-Load a module directly,  
-`insmod` <modulename>
+##### `modprobe`
+Load or unload a modules with dependency management for both load and unload.
 
-Unload a module directly,  
-`rmmod` <modulename>
-
-Load or unload a modules with dependency management,
 `modprob <modulename>`
 `modprob -r <modulename>`
 
-Rebuild the module dependency database,  
+Load a module straight,
+
+`insmod <modulename>`
+
+Unload a module straight. It's not possible to unload if the module is used by another module or by a process. 
+`rmmod <modulename>`
+
+Generate or update module dependency db,
+
 `depmod`
 
 Display module details such as version, module dependencies, supported hardwares, what parameters can be supploed during loading etc.
-`modinfo` <modulename>
 
-#### Module utilities
+`modinfo <modulename>`
 
 Modules can be loaded specifying parameters
 
