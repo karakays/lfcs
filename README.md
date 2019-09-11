@@ -1097,28 +1097,30 @@ To set a parameter, either write to corresponding file or
 ### XXVI. Kernel modules
 
 Linux retains _monolithic_ architecture. Kernel `modules` are facilities that can be loaded or unloaded at runtime. Modules are mostly device drivers but also could be a custom network protocol (tcp, ip, iptables) or a filesystem (ext4, vfat) etc. It's responsibility of the distribution to include driver modules for every device model, filesystems etc.
+
 Once a module is loaded, it becomes a fully funcitonal native part of the monolithic kernel, with few restrictions. Modules might depend on each other and can be used by one or more processes at a time.
 
 #### Utilities
 
 Modules have `*.ko` file extension and can be found in `/lib/modules/<kernel-version>/`. Modules are built with a specific kernel version. A modules can also be used by one or more other modules.
 
-List loaded modules also displaying # of processes using the module and its dependants,  
+List loaded modules also displaying # of processes using the module and its dependants, 
 
 `lsmod`
 
 ##### `modprobe`
 Load or unload a modules with dependency management for both load and unload.
 
-`modprob <modulename>`
-`modprob -r <modulename>`
+`modprob <module>`
+
+`modprob -r <module>`
 
 Load a module straight,
 
-`insmod <modulename>`
+`insmod <module>`
 
 Unload a module straight. It's not possible to unload if the module is used by another module or by a process. 
-`rmmod <modulename>`
+`rmmod <module>`
 
 Generate or update module dependency db,
 
