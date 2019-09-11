@@ -1215,24 +1215,23 @@ Emulator is an application running in an OS that appears to another OS or applic
 #### Hypervisor types
 
 * type i - bare-metal (native): It runs directly on the hardware, no host OS inbetween. As a result, VMs can access hardware directly so better performance. Examples: VMware vSphere, kvm, Microsoft Hyper-V
-![](https://phoenixnap.com/kb/wp-content/uploads/2018/12/type-1-hypervisors.png)
+
+<p align="center"> <img alt="type-i-hv" width="300" height="300" src="https://phoenixnap.com/kb/wp-content/uploads/2018/12/type-1-hypervisors.png"/></p>
 
 * type ii - hosted hypervisor: It runs on the host OS as a process. VM have no direct accesss to hardware, it goes through host system which lowers VM performance. Examples: Oracle VirtualBox, VMware Workstation
-![](https://phoenixnap.com/kb/wp-content/uploads/2018/12/type-2-hypervisors.png)
+
+<p align="center"> <img alt="type-ii-hv" width="300" height="300" src="https://phoenixnap.com/kb/wp-content/uploads/2018/12/type-2-hypervisors.png"/></p>
 
 `libvirt` is the library that provides management of virtual machines, virtual networks, virtual storage. Tools such as
 `virt-manager, `virt-viewer`, `virt-install`, `virsh` use this library.
 
 #### QEMU
-Quick EMulator is hypervisor that also performs CPU hardware emulation. QEMU can be used together with third party hypervisor to boost performance like
-* KVM
-* Xen (KVM-alternative in Debian)vv
-* Oracle VirtualBox
+Quick EMulator is hypervisor also capable of CPU emulation of different archictectures. QEMU can be used together with third party hypervisor to boost performance. 
 
 #### KVM
-KVM is a hypervisor as a kernel module. It's of type i with full-virtualization capabilities.
+KVM is a kernel module which works as a hypervisor, linux turned into hypervisor. It's of type i with full-virtualization capabilities.
 
-![KVM w/ QEMU](https://upload.wikimedia.org/wikipedia/commons/thumb/4/40/Kernel-based_Virtual_Machine.svg/800px-Kernel-based_Virtual_Machine.svg.png)
+<p align="center"> <img alt="KVM w/ QEMU" width="400" height="600" src="https://upload.wikimedia.org/wikipedia/commons/thumb/4/40/Kernel-based_Virtual_Machine.svg/800px-Kernel-based_Virtual_Machine.svg.png"/></p>
 
 ### XXIX. Containers
 
@@ -1240,9 +1239,9 @@ A container narrows the scope of virtualization and is at the OS-level virtualiz
 
 A container sits on top of physical server and the host OS. Multiple containers share the same host OS.
 
-![VM architecture](https://nickjanetakis.com/assets/blog/virtual-machine-architecture-e6bcc9d42a12a12da38e92ba5a7ddef21e6bda269abc580a84ece64ac189d2b2.jpg)
+<p align="center"> <img alt="VM architecture" width="300" height="300" src="https://nickjanetakis.com/assets/blog/virtual-machine-architecture-e6bcc9d42a12a12da38e92ba5a7ddef21e6bda269abc580a84ece64ac189d2b2.jpg"/></p>
 
-![Docker architecture](https://nickjanetakis.com/assets/blog/docker-architecture-2cf6d2f4a7d8f04df5576d06c46f02435d8fae339063f58a621a42f24255602a.jpg)
+<p align="center"> <img alt="Docker architecture" width="300" height="300" src="https://nickjanetakis.com/assets/blog/docker-architecture-2cf6d2f4a7d8f04df5576d06c46f02435d8fae339063f58a621a42f24255602a.jpg"/></p>
 
 #### Container vs VM
 
@@ -1258,7 +1257,44 @@ A container sits on top of physical server and the host OS. Multiple containers 
 Docker daemon (engine) replaces hypervisor. It ensures each container is isolated from each other and the host OS.
 
 base image, bins, libs and application code are contained altogether in the docker image, all bundled together. `Dockerfile` tells Docker how to build the image. A container is created and started with running a docker image
-```docker run <image>```
+
+##### Docker image file
+
+You can create a Docker image in two ways
+* manually from an existing container
+* `Dockerfile`
+
+```
+# create container from image `ubuntu`
+# checks local repository for image named `ubuntu` if not exists
+# check central repository
+docker run --name my-container -it ubuntu:latest bash
+# pulls ubuntu:latest from docker hub, starts a docker container and shell login into it
+# install some packages with package managers or manually here
+exit
+# docker container stopped at this point
+# turn container into an image with versioning
+docker commit -m "my-container-init" -a "Selcuk" my-container karakays/my-container:latest
+```
+
+`Dockerfile` is a declarative way of for creating a Docker image.
+```
+# Dockerfile
+FROM ubuntu:latest
+RUN apt-get update
+# make some installations
+EXPOSE 6379
+ENTRYPOINT  ["app.sh"]
+```
+
+Create a running container from an image
+```
+docker build -t my-image .
+# create container from image
+# -d to detach (let container run in bg)
+# -p to publish port to the hostj
+docker run -d -p 8888:6379 <my-image>
+```
 
 ### XXX. User account management
 `/etc/passwd` is the local user directory. Users are defined in `/etc/passwd`and each account has its own entry in `/etc/passwd` that holds basic user attributes like
