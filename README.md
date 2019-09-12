@@ -1297,39 +1297,56 @@ docker run -d -p 8888:6379 <my-image>
 ```
 
 ### XXX. User account management
-`/etc/passwd` is the local user directory. Users are defined in `/etc/passwd`and each account has its own entry in `/etc/passwd` that holds basic user attributes like
+`/etc/passwd` is the local user directory. Users are defined in `/etc/passwd` and each account has its own entry in `/etc/passwd` that holds basic user attributes like
 
 * username, uid, gid
 * home, default shell
-Each field is separated with a colon.
 
 ```karakays:x:1000:1000:Selcuk Karakayali,,,:/home/karakays:/bin/bash```
 
-#### `/etc/shadow`
-Password field contains hashed password. It's left with `x` if passwords are managed with `/etc/shadow`.  
-```/etc/passwd``` has `644` permissions that means anyone can read it. This is because system programs and user apps need to read the information in that file. On the other hand, `/etc/shadow` has `400` permissions. `/etc/shadow``` is preferred way to keep passwords as it prevents anyone to read hashed passwords.
+#### `/etc/passwd` and `/etc/shadow`
+Password field contains hashed password. If this field is blank, no password is required to login for the user. It's left with `x` if passwords are managed with `/etc/shadow` (default). Any other value is treated as encryped password.
+
+##### `/etc/shadow`
+
+`/etc/passwd` has `644` permissions that means anyone can read it. This is because system programs and user apps need to read the information in that file. On the other hand, `/etc/shadow` has `400` permissions. `/etc/shadow` is preferred way to keep passwords as it prevents anyone to read hashed passwords.
 
 `/etc/shadow` contains one entry line for each user and contains password-related attributes with colon separated fields
 
-```acme:$6$WWFDxsbs$7tFoaoCdErof8VyvHF9vO9kMAIeHk9FTc790VDZpUevYTh4/hcA/IvX.YGkZJU/Qm0:18100:0:99999:7:::```
-
-Fields (for details, see ```man shadow```)
+```
+acme:$6$WWFDxsbs$7tFoaoCdErof8VyvHF9vO9kMAIeHk9FTc790VDZpUevYTh4/hcA/IvX.YGkZJU/Qm0:18100:0:99999:7:::
+```
 
 * username
 * hashed password: `$6$` followed by 8 chars salt, followed by `$` and sha512'ed password
- - `!` in front or solely `!!` means account is locked
+ - `!` means password is invalid and user cannot login with password (default behavior for newly created users)
+ - `!<digest>` means password is locked
 * lastchange of passwd
 * minimum and maximum passwd age
 * password warning and inactivity period
 * account expiration date - default=empty, no expiry
 * reserved
 
-When a new user is created, by default, it won't have a password yet. This is indicated wiath `!` alone in the shadow file. passwd` is to create a password for a user. `root` can change any password. To change `dexter`'s passowrd,
+When a new user is created, by default, its password is invalid nd cannot login with password. This is indicated with `x` in `passwd` and `!` in the `shadow` file.
 
-```sudo passwd dexter```
+`passwd` is to change a password for a user interactively. `root` can change any password. To change `dexter`'s passowrd,
+
+`sudo passwd dexter`
+
+`chpasswd` is to update password non-interactively.
+
+`echo 'dexter:P@ssw0rd' | sudo chpasswd`
 
 ##### `chage` password aging
-`chage` is used to edit password aging attributes in shadow. Only root can change these attributes.
+`chage` is used to edit password aging attributes in shadow.
+
+`chage [options] LOGIN`
+
+-d `LAST_DAY` is then the password was last changed in number of days since epoch. `0` days means user needs to change password immediately in next successful login. After user changes password, `LAST_DAY` is set back to normal date.
+
+-E `expiredate` is to lock the account on date yyyy-mm-dd. User cannot login if account expired.
+
+`chage -l LOGIN  # show account aging information`
 
 ##### Creating/deleting/editing user accounts
 
@@ -1337,7 +1354,7 @@ Create new user account for username dexter
 
 ```sudo useradd dexter```
 
-whereas with following defaults for new user. By default, it doesn't get a password for the user so user cannot login at all. Defaults specified in `/etc/default/useradd` and they are
+whereas with following defaults for new user from `/etc/default/useradd` -
 
 * next available uid assigned to dexter. By convention, any account id less than `1000` is considered special and is a system account.
 * a group `dexter` created where gid=uid and assigned as primary group
@@ -1357,7 +1374,7 @@ Remove a user and all its references in `/etc/shadow`, `/etc/passwd`, `/etc/grou
 
 `/home/dexter` is kept by default.
 
-Edit user attributes with using the options to `usermod` command. To lock the user account
+Edit user attributes with using the options to `usermod` command. To lock the user password
 
 ```sudo usermod -L dexter```
 
@@ -1365,23 +1382,24 @@ or
 
 ```sudo passwd -l dexter```
 
-Locking an account means that it prevents password authentication in login. However, same user can login with other authentication mechanisms, e.g. ssh keys.
+This is achieved by prepending a `!` in password hash. Unlocking removes the `!`. 
 
-Locking password in ways above puts a `!` in front of the passwd field. Unlocking removes the `!`. Another way to lock an account is replace hashed password with `!!`.
+###### Locked account vs. password
+
+A locked password prevents a user to authenticate with that password, however, user can authenticate by other means, e.g. ssh keys etc. Locking an account eliminates to authenticate and use that account in any way,
 
 Unlocking is done with `-U` or `-u` option, respectively.
 
-#### Check: disabled accounts vs locked accounts.
-
 ##### System accounts
 
-System accounts should be locked. `-r` option creates one with no aging information in shadow file.
+System accounts are created with `-r` option in `useradd` command. Properties
+
+* uid's in a different range
+* no aging information
+
+System account should only be able to run programs. Default shell should be set to `/sbin/nologin` or `/usr/sbin/nologin` which prevents account to login. User is prompted with ```This account is currently is not available.``` message if it attempts to login.
 
 ```sudo useradd -r -s /usr/sbin/nologin tomcat```
-
-They can only run programs. Default shell should be set to `/sbin/nologin` or `/usr/sbin/nologin` which prevents account to login. User is prompted with ```This account is currently is not available.``` message if it attempts to login.
-
-```bin:x:2:2:bin:/bin:/usr/sbin/nologin```
 
 #### Restricted account
 
