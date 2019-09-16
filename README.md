@@ -1394,8 +1394,11 @@ Unlocking is done with `-U` or `-u` option, respectively.
 
 System accounts are created with `-r` option in `useradd` command. Properties
 
-* uid's in a different range
+* system accounts should never login provided with
+    - shell set `/usr/sbin/nologin`. even if a valid/correct password is entered, this shell prevents login
+    - they have invalid password by default
 * no aging information
+* uid's in a different range
 
 System account should only be able to run programs. Default shell should be set to `/sbin/nologin` or `/usr/sbin/nologin` which prevents account to login. User is prompted with ```This account is currently is not available.``` message if it attempts to login.
 
@@ -1469,11 +1472,11 @@ A user private group, UPG, is a group where
 
 By default, `useradd` creates a UPG for the new user.
 
-#### Memberships
+#### `groups`
 
 Every user has one primary group, however it also belong from 0 to 15 secondary groups. To list the groups `dexter` belongs to 
 
-```groups dexter```
+`groups dexter`
 
 ### XXXII. File permissions
 
@@ -1486,25 +1489,29 @@ Any request to kernel to access a file requires authorization - whether calling 
 
 Multiple permissions can be specified separated with comma
 
-```chmod ug+w,o+r somefile```
+`chmod ug+w,o+r somefile`
 
 Setting permissions with octal digits require to set whole permissions. In contrast to this, symbolic form lets you specify only what's needs to be changed, not more.
 
 How permissions work for a directory?
 
 * `r` bit needed to access directory
-* `x` bit needed to list directory contents. otherwise, each content item shown with `?` marks.
+* `x` bit needed to list directory contents. otherwise, each content item shown with `?` marks. solely `x` means nothing because you neeed access directory first.
 * `rx` bits neded to properly list the directory - first access and then list
-* 'wx" bits neded to create a file in the directory
+* `wx` bits neded to create a file in the directory
 
 #### umask
+
+Set or get file creation mask.
 
 Default permissions at kernel level for newly files are
 
 * 0666 for file
 * 0777 for directories
 
-`umask` is a global permission mask that is applied to newly created files and directories. That means, actual permissions are made up by combining these defaults with the umask value. More precisely, umask's XORed value is ANDed with default permissions. To get current umask value,
+`umask` is a global permission mask that is applied to newly created files and directories. That means, actual permissions are made up by combining these defaults with the umask value. More precisely, umask's XORed value is ANDed with default permissions = `0666 & ~022 = 0664`
+
+To get current umask value,
 
 ```$ umask```
 ```0002```
@@ -1513,8 +1520,6 @@ or to get it in symbolic form
 
 ```$ umask -S```
 ```u=rwx,g=rwx,o=rx```
-
-```0666 & ~0002 = 0664```
 
 to set the umask,
 
@@ -1540,29 +1545,30 @@ Pluggable Authentication Modules provides authentication policies in a uniformed
 
 #### PAM configuration
 PAM configuration files are found in `/etc/pam.d`. Each file corresponds to a service that relies on PAM for authentication, e.g.
+* sshd
 * sudo
 * su
 * login
 * passwd
-* sshd
-* reboot etc.
 
-A PAM-aware application invokes `libpam` which in turn checks these configuration files to apply rules and might invoke further modules.
+A PAM-aware application invokes `libpam` which in turn checks these configuration files to apply rules and invokes PAM modules.
 
-Each line in a PAM configuration specifies a rule that is made of
+PAM configuration is made up of rules each in a single line -
 
-`type` `control` `module-path` `module-args`
+`<type> <control> <module-path module-args>`
 
-Modules are stacked together and all together they build up the authentication process. Modules are executed in the order and the result of each module (either success or failure) affects overall authentication.
+#### PAM modules
 
-##### type or module interface
+PAM modules are libraries with `*.so` extension located in the `/lib/security`. They are stacked together and build up the authentication process. Modules are executed in the order and the result of each module (either success or failure) affects overall authentication.
+
+##### Type or module interface
 Specifies the module interface to be used
 
 type | desc
 --- | ---
-`auth` | Instruct the app to authenticate the user
+`auth` | Instructs the user to authenticate
 `account`  | Checks users account attributes such as if account has expired or authn allowed at that time
-`password` | Used for changing passwords
+`password` | Used for updating authn mechanisms
 `session` | functions before and after session is established
 
 ##### control
@@ -1570,13 +1576,13 @@ Controls how success of failure of current module in the stacks affects overall 
 
 control | desc
 ---         | ---
-`required` | Module must pass but on failure it doesn't fail immediately and other modules continued
-`requisite` | same as `required` but failes immediately on failure and terminates authentication
-`optional` | module not required
-`sufficient` | if module succeeds, not subsequent modules in the stack executed
+`required` | Module must pass but on failure it doesn't fail immediately and other modules in stack continue
+`requisite` | same as `required` but failes immediately on failure and control is returned to application
+`optional` | module optional, result only matters it's the only module in the stack
+`sufficient` | if module succeeds, control returned immediately to application with success
 
 ##### module-path and module args
-path of the library (*.so file) to invoke and with its arguments
+Path of the PAM module to invoke and with its arguments.
 
 #### LDAP
 
@@ -1588,11 +1594,10 @@ PAM can be configured to work with an LDAP server. LDAP provides a centralized i
 * IPv4 is of 4 bytes where IPv6 is of 16 bytes.
 
 * A IPv4 address consists of a network portion and a host portion. Bother together identifies a host's network and address in the network. `netmask` is used to determine how much of the address belongs to network portion and host portion.
-
-- unicast: associated with a specific host
-- network: host portion is set to 0, e.g. x.x.x.0
-- broadcast: host portion is set to 1, e.g. x.x.x.1
-- multicast: only nodes that are appropriately configured will listen to a multicast.
+    - unicast: associated with a specific host
+    - network: host portion is set to 0, e.g. x.x.x.0
+    - broadcast: host portion is set to 1, e.g. x.x.x.1
+    - multicast: only nodes that are appropriately configured will listen to a multicast.
 
 Reserved addresses:
 - 0.0.0.0 denotes unknown address of the host. DHCP uses this address when communicating to server.
@@ -1604,15 +1609,21 @@ class |  most significant octet range | network portion in bits | netmask
 A   | 1-127                           | 8                       | x.0.0.0
 B   | 128-191                         | 16                      | x.x.0.0
 C   | 192-223                         | 24                      | x.x.x.0
-D   | 224-239                         | na                      | na
-E   | 240-254                         | na                      | na
+D   | 224-239                         | na - multicast only     | na
+E   | 240-254                         | na - reserved           | na
 
-network address = unicast & netmask
+#### Network address
+
+`network address = unicast & netmask`
 
 #### Hostname
 * In DNS, hostnames are appended with a dot and domain name to qualify FQDN, e.g. debian.karakays.com
 
-* hostname is kept at `/etc/hostname`. `hostname` command displays it.
+* hostname is kept at `/etc/hostname`. `hostname` command displays it. To change it,
+
+`hostname foo`
+
+This change is not permanent. For a permanent change, edit `/etc/hostname` and reboot. Or to save a reboot, use `hostnamectl`.
 
 ### XXXV. Network devs and configuration
 
