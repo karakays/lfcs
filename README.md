@@ -171,15 +171,23 @@ To find shared libraries of a program requires,
 
 ### IV. Signals
 
-A way of communication with a process (basic IPC)
-It can originate from:
-* _user_: via `kill` command
-* _a process_: must be via system call through kernel
-* _kernel_: e.g. a process makes an illegal memory reference
+A way of communication with a process (basic IPC). It can originate from
 
-`kill` is the command to send signals to a process.
+* user: via `kill` command
+* process: must be via system call through kernel
+* kernel: e.g. a process makes an illegal memory reference
 
-Signal handlers can be implemented in the program code or it can response according to the system defaults.
+`kill <pid>` is the command to send signals to a process id.
+
+Default kill action is to terminate given process gracefully. However, not all kill actions terminate.
+
+`kill 1234`
+
+To list signal types and values
+
+`kill -l`
+
+There are default handlers for every signal provided kernel. However, signal handlers can also be implemented in the application code to override default behavior. It's not allowed to handle `SIGKILL` and `SIGSTOP`.
 
 Signal | Default action | Description
 --- | --- | ---
@@ -194,12 +202,15 @@ SIGCONT | Continue | Resume
 SIGCHLD | Ignore | Child stopped/terminated 
 SIGPIPE | Terminate | Broken pipe; socket closed
 
-`killall` sends signals to process(es) by name or user given.
-`pkill` sends signals to processes by filtering by name or user.
-`pgrep` is synopsis. Filters by pattern and other options like owner, parent, time.
-`pgrep [options] pattern`
-`pgrep -u root java  # list java processes owned by root`
+#### `pkill` and `pgrep`
 
+To kill processes in batch mode by a criteria, use `pkill <command>`.
+
+Kill all `cat` processes by user tom with a signal 15
+
+`pkill -15 -u tom cat`
+
+`pgrep` prints PIDs to stdout with the same options.
 
 ### V. Package managers
 In general, two families of package managers can be considered.
