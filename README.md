@@ -65,7 +65,7 @@ Documentation (incl. man pages)
 Kernel source
 
 ##### /boot
-Contains compressed kernel image and initrd
+Contains compressed kernel image, `initrd`, `GRUB`
 
 ##### /opt
 Isolated installation directory (not scattered in multiple directories)
@@ -1655,6 +1655,10 @@ monitor     | watch for netlink messages
 
 ```ip link set eth0 down            # bring eth0 down```
 
+```ip route show default            # print default route```
+
+```ip route get 1.1.1.1             # get route entry for dest. address```
+
 ```ip route add x.x.x.x via y.y.y.y # add route```
 
 #### PNIDN
@@ -1678,7 +1682,7 @@ Network configurations applied by `ip` or `ifconfig` tools  are _non-persistent_
 * `nmtui`: text user interface (on terminal) for network manager.
 * `nmcli`: CLI for network manager.
 
-`nmtui` and `nmcli` are distro-independent and abstract differences in NICs. Any changes are permanent!
+`nmtui` and `nmcli` are distro-independent and abstract differences in NICs. Any changes applied with these tools are permanent!
 
 ```nmcli device wifi list                                   # list wifi networks in range```  
 ```nmcli device wifi connect <ssid>                         # connect to network```  
@@ -1693,7 +1697,6 @@ Add a new permanent address to existing connection and acticate it. The same net
 Add a new permanent route.
 
 `nmcli con modify karakays +ipv4.routes 2.2.0.0/16`
-
 
 #### Routing
 For every TCP/IP packet being transmitted, sometimes network interfaces cannot transmit packets directly to the destination and need to forward to intermediate routers. Kernel's routing table is here to help find the next stop of a packet. This is done by comparing routing entries in the table with the final destination address of the packet. Packet is forwarded to the gateway address of the routing entry found, Some routing entries might not have a gateway which is indicated with the absence of `G` flag. To see current routing table
@@ -1733,16 +1736,20 @@ To add a route for target network -n <nw-ip>,
 `mtr` combines `ping` and `traceroute` commands. It constantly sends requests and continuously updates trace display like `top`.
 
 ### XXXVI. Firewalls
-Firewalls are  based on packet filtering for both incoming and outgoing network traffic. It applies a set of rules to each packet and consequently, a packet is accepted, rejected, altered or redirected etc. Common tools are
+Firewalls are  based on packet filtering for both incoming and outgoing network traffic. It applies a set of rules to each packet and consequently, a packet is accepted, rejected, altered or redirected etc.
+
+Network services with standard ports are listed in `/etc/services`. Well-known ports for TCP and UDP are shown.
+
+Common firewalls are
 
 * `iptables` complex tool to configure firewall rules.
 * `ufw` (uncomplicated firewall) is a front-end for `iptables` to assist and comes with Ubuntu.
-* `firewalld` is another front-end for `iptables` to assist.
+* `firewall-cmd` is front-end for `firewalld` to assist.
 
 #### firewalld
 `firewalld` is the modern firewall service and replaces `iptables`.
 
-#### Zones
+##### Zones
 
 A `zone` defines a level of trust and a known profile applied for incoming/outgoing traffic. Each network interface belongs to a zone. Rules can be applied in runtime or in a permanent way. Some of the zones are
 
@@ -1757,7 +1764,7 @@ A `zone` defines a level of trust and a known profile applied for incoming/outgo
 * trusted: all connections allowed
 
 Zones can be assigned in three different ways
-* to whole network interface
+* to a network interface
 * to a source network address
 * to a service and port
 
@@ -1766,7 +1773,7 @@ To assign a network interface to a zone, permanently
 
 ##### Source management
 
-Assign a zone to a source network address. 
+Assign a zone to a source network address. Any packets coming from this source  - where source address equals is associated with the zone.
 
 To assign a network (all hosts in the network) to a zone, permanently
 ```firewall-cmd --permanent --zone=trusted --add-source=192.168.1.0/24```
@@ -1785,13 +1792,14 @@ Assign a zone to a listening port
 
 Basic steps for a boot sequence are:
 
-* Machine's boot firmware loads and looks up for bootloaders. UEFI compatible bootloaders are located in `/boot/efi/*.efi`. 
+1. Machine's boot firmware loads and looks up for bootloaders. UEFI compatible bootloaders are located in `/boot/efi/*.efi`. 
     - provided by computer vendor
     - initial hardware checks
-* Bootloader loads kernel image into memory and runs it. Kernel path is specified in `grub.cfg`.
+2. Bootloader is executed with configuration from `/boot/grub/grub.cfg`. 
     - Bootloader uses hardware firmware to access the disk directly because kernel is not loaded yet
-* kernel does hardware checks, get access to peripheral devices, mounts `root` and starts `init` process.
-* `init` sets the rest of the system in motion.
+3. Bootloader loads kernel image from `/boot/vmlinuz-version` specified with `root` option into memory and runs it. Kernel path is specified in `/boot/efi/grub.cfg`.
+4. Kernel does hardware checks, get access to peripheral devices, mounts `root` and starts `init` process.
+5. `init` sets the rest of the system in motion.
 
 #### Bootloaders
 
@@ -1817,8 +1825,8 @@ Q: Can be overridden somewhere?
 * poweroff: power-off the machine
 * reboot
 
-`shutdown -h <time>            # shutdown in <time>`  
-`shutdown -r now               # reboot now`
+`shutdown -h <+15>            # shutdown in 15 mins`  
+`shutdown -r now              # reboot now`
 
 `reboot`, `halt` and `poweroff` commands are legacy.
 
@@ -1833,14 +1841,16 @@ If `GRUB` is not installed during system installation or to install it later in 
 Features
 * Lists multiple OS to boot including Microsoft etc.
 * Lists multiple kernel versions and `initrd` to boot
-* Change boot parameters by entering into interactive GRUB shell by pressing `e` to edit. Changes here apply for current boot and are'nt not permanent
+* Change boot parameters by entering into interactive GRUB shell by pressing `e` to edit. GRUB has its own shell. Changes here apply for current boot and are not permanent
 
 #### `initrd`
 `initrd` or initial ramdisk is a temporary root filesystem used to detect hardware detection, module loading and device discovery at boot time. This is a mandatory step before the real root file system can be mounted. `GRUB` loads both `initrd` and kernel into memory, then starts the kernel passing the memory address of `initrd`.
 `initrd` image is found in `/boot` directory just as where the `kernel` image resides.
 
 #### `grub.cfg`
-GRUB configuration is read by `GRUB` during boot and is found in `/boot/grub` or `/boot/grub2` depending on the distribution. It should not be edited directly because is auto-generated by `update-grub` command. It's based on `/etc/default/grub` and `/etc/grub.d`. Any update on these files requires running `update-grub` to reconstruct the `grub.cfg` file.
+GRUB configuration contains kernel boot parameters and is found in `/boot/grub/grub.cfg`. It is auto-generated by `update-grub` command. It's based on `/etc/default/grub` and `/etc/grub.d`. Any update on these files requires running `update-grub`.
+
+You see kernel command line and its boot parameters is just one part of the whole `GRUB` configuration. There are many others like `GRUB_TIMEOUT`, `GRUB_TERMINAL`, `GRUB_INIT_TUNE` and some others which come from `/etc/grub.d/`
 
 ### XXXIIX. `SysVinit`, `upstart` and `systemd`
 
