@@ -44,33 +44,24 @@ This repository contains my personal notes that I take on during preparation for
 
 ### II. Filesystem layout
 
-FHS… initiative to standardise filesystem organization in distributions
-
-Pseudo-filesystems
-Reside only in memory during runtime and not on disk. Contains nothing on a non-running system.
+#### FHS
+Initiative to standardise filesystem organization across different distributions
 
 ##### /bin
 Essential binaries required when no other filesystems have yet been mounted. Also in single user mode or recover mode.
 
 ##### /sbin
-System binaries during booting, recover or restore. Also capable of mounting /usr, /home etc.
+System binaries for booting, recover or restore. Also capable of mounting /usr, /home etc.
 
 ##### /usr
-A secondary hierarchy. /usr/bin, /usr/lib, /usr/local, /usr/sbin
-/usr/bin
-Not needed for system booting. Contains multi-user applications. Package managers touch here.
-/usr/share
-Documentation (incl. man pages)
-/usr/src
-Kernel source
+A secondary hierarchy that is not needed for system booting. It contains multi-user applications. Package managers touch here.
+/usr/bin, /usr/lib, /usr/local, /usr/sbin, /usr/bin, /usr/share, /usr/src (kernel source)
 
 ##### /boot
 Contains compressed kernel image, `initrd`, `GRUB`
 
 ##### /opt
-Isolated installation directory (not scattered in multiple directories)
-Helpful for proprietary sw or packages downloaded without package managers
-
+Isolated installation directory (not scattered in multiple directories). Helpful for proprietary sw or packages downloaded without package managers
 
 ##### /proc
 Pseudo-fs. Persists only in memory for processes to keep internal state. Each process has its place as a subdirectory
@@ -79,38 +70,61 @@ Pseudo-fs. Persists only in memory for processes to keep internal state. Each pr
 Home of root user
 
 ##### /var
-For variable and volatile data that changes frequently. Logs, spool directories (for mail and cron), transient data for cache (e.g. packages) , lock files (linked to /run/lock)
+For variable data that changes frequently. Logs, spool directories (for mail and cron), transient data for cache (e.g. packages) , lock files (linked to /run/lock)
 
 ##### /run
 Pseudo-fs. For transient data that contains runtime information as lock files
 
-<a name="process here"></a>
+##### /media
+Mount filesystems for removable media such as USBs
+
+##### /run
+A temporary place to mount filesystems such as NFS
+
 ### III. Processes
 
-`orphan`: A process whose process has terminated. Its PPID is set to 1 that is, it's adopted by `init`.
+`orphan`: A child process whose parent has terminated. Its PPID is set to 1 that is, it's adopted by `init`.
 
-`zombie`: A child process terminates without its parent gets notified of this. It still has an entry in the process table. 
+`zombie`: A child process terminates without its parent gets notified of this. A zombie releases its resources, however, it waits to notify its exit state to parent. It still has an entry in the process table. 
 
-`wait` is a system call that may be submitted by a process after forking a child process. Parent suspends execution and wait child process to complete and gets notified of its exit status.
+`wait` is a system call that may be submitted by a process after forking a child process. Parent suspends execution and wait child process to complete and gets notified of its exit status. `wait` is skipped if child process is started in the background.
 
-PID is 16 bit integer located in /proc/sys/kernel/pid_max and can be altered.
+PID is 16 bit integer located in `/proc/sys/kernel/pid_max` and can be altered.
 
-##### Limits
-`ulimit` gets/sets limits of the calling process. Limits on resources such as as max cpu time, max file locks, max open files, max threads, stack size, memory size, file size etc.
+#### Limits
 
-##### Permissions
+`ulimit` gets or sets the limits on resources to the shell and processes started by shell. That enables to restrict users to restrict system resources. On the other hand, it's also used to expand limits of some processes. 
+
+There is hard and soft limits where hard limit can only be set by `root` and it's the upper limit a soft limit can reach that is set by a user.max cpu time, max file locks, max open files, max threads, stack size, memory size, file size etc.
+
+To see current limits
+
+`ulimit -a`
+
+To set stack size. This is not permanent, however, only current shell session is affected. To persist it, set it in `/etc/security/limits.conf`.
+
+`ulimit -s 4096`
+
+Too see max file numbers hard and soft limits
+
+`ulimit -H -s`
+`ulimit -S -s`
+
+#### Permissions
 A process can inherit permissions from 
 * executor - the user who executes it
 * executable - executable binary file, `setuid` bit set.
 
 ##### Execution modes
 At any given time, a process is running in a certain execution mode.
-* user mode: usually when executing application code
-* kernel mode: when executing system calls to access hardware resources memory, disk, peripherals.
+* user mode `us`: when executing application code in user-space
+* system mode `sy`: when executing system calls (kernel code) in kernel-space
 
-##### fork and exec
-$ ls
-bash process forks itself and a new copy, i.e. child process is created. fork() returns child's PID to parent. bash process goes into sleep state with `wait` system call on its child.
+#### fork and exec
+
+`$ ls`
+
+bash process forks itself and a new copy, i.e. child process is created. `fork()` returns child's PID to parent. bash process goes into sleep state with `wait` system call on its child.
 copy process makes `exec` system call and loads `ls` code in the child process space and executes it.
 when execution completed, child process terminates via exit system call and returns exit code to kernel.
 bash receives exit status either via polling or SIGCHLD signal handler from kernel, removes child's entry from process table (i.e. reaped) and it resumes execution.
@@ -120,29 +134,40 @@ state code |  Description
 D   | uninterruptible sleep (usually IO)
 R   | running or runnable (on run queue)
 S   | interruptible sleep (waiting for an event to complete)
-T   | stopped by job control signal (Ctrl+Z)
-t   | stopped by debugger during the tracing
-X   | dead (should never be seen)
+T/t   | stopped by job control signal (Ctrl+Z) / by debugger
 Z   | defunct ("zombie") process, terminated but not reaped by its parent
+
+#### Kernel processes
 
 Kernel-created processes can run in
 * kernel space for maintenance work
 * user space - usually short lived
 
-Their parent is kthreadd[2] and names are in encapsulated brackets.
+Kernel processes are created by `kthreadd` pid=2 and their names are in encapsulated brackets.
 
-##### Process priority
-`nice` executes a command with adjusted niceness. The lower the niceness, the higher is the process priority.
-$ nice -n +3 command args # increase niceness by 3, lowers priority by 3
+#### Process priority
+
+`nice` executes a command with adjusted niceness. The lower the niceness, the higher is the process priority - between -20 and 19.
+
+Execute `ls` with args and increase its default nice by +3 (priority decreased). Default niceness is 10 (priority decreased by 10)
+
+`nice -n +3 ls /proc`
+
+Only root can decrease niceness.
+
 `renice` to prioritize an existing process
-$ renice -n -5 <pid>
 
-##### Library types
-static: An application compiled with a static library doesn't change thereafter even if static library is updated. .
+`renice -n -5 2002`
 
-shared: Such libraries can be loaded into application at runtime - also called dynamic link libraries (DLL). I think it can be thought as an external dependency that is satisfied from the environment and not during application build time. Shared libraries have \*.so extension.
+#### Libraries
 
-`ldd` list shared dependencies of an executable.
+1. static: An application compiled with a static library doesn't change thereafter even if static library is updated.
+
+2. shared: Such libraries can be loaded into application at runtime - also called dynamic link libraries (DLL). I think it can be thought as an external dependency that is satisfied from the environment and not during application build time. Shared libraries have `*.so` extension.
+
+To find shared libraries of a program requires,
+
+`ldd /usr/bin/vim`
 
 ### IV. Signals
 
