@@ -1627,28 +1627,38 @@ This change is not permanent. For a permanent change, edit `/etc/hostname` and r
 
 ### XXXV. Network devs and configuration
 
-Network devices are not associated with a device file, they are known by names as
+Network devices, also known as network interfaces, are not associated with a device file, they are known by names as
 * eth0, eth1  for ethernet devices
 * wlan0, wlan1, wlp3s0, wlp3s1 for wireless devices
 
 #### `ip`
-`ip` is a multiplex tool that is used to configure, control and query network devices or interface parameters. It's preferred tool over the deprecated `ifconfig`.
+`ip` is a multiplex used to configure, control and query network devices or interface parameters. It's preferred tool over the deprecated `ifconfig`.
 
-```ip [ options] object <command>``` where object can be
+`ip [options] object <command>` where object can be
 
 object      | function
 ---         | ---
 address     | IPv4 or v6 address
-link        | network devices (interface)
+link        | manage network devices
+maddress    | manage multicast addresses
 route       | routing table entries
+rule        | rule in routing policy database
 monitor     | watch for netlink messages
 
-```ip addr show wlp3s0```  # show address of interface
-```ip link show            # list network devices```
-```ip link set eth0 down   # bring eth0 down```
+#### `ip` examples
+
+```ip addr show wlp3s0              # show address of interface```
+
+```ip addr add x.x.x.x dev eth0     # add address to device eth0```
+
+```ip link show eth0                # list network devices```
+
+```ip link set eth0 down            # bring eth0 down```
+
+```ip route add x.x.x.x via y.y.y.y # add route```
 
 #### PNIDN
-Traditional network device naming scheme is unpredictable. One network device name can be assigned to another device in the next boot. To solve that, `Predictable Network Interface Device Names` is introduced which incorportes more device details when assigning names to network interfaces
+Traditional network device naming scheme is unpredictable. One network device name can be assigned to another device in the next boot. To solve that, `Predictable Network Interface Device Names` is introduced which incorportes `udev` and `systemd`.
 * Firmware or BIOS provided index numbers, e.g. eno1
 * Firmware or BIOS provided PCI Express hotplug slot index numbers, e.g. ens1
 * Physical/geographical location of hw connection, e.g. enp2s0
@@ -1656,28 +1666,37 @@ Traditional network device naming scheme is unpredictable. One network device na
 * old classic method, e.g. eth0
 
 #### NIC
-Network configurations applied by `ip` or `ifconfig` tools  are _non-persistent_, in other words, this configuration is lost after reboot. To make it persistent, network interface configuration files, NIC, need to be used of which format depends on distro
+Network configurations applied by `ip` or `ifconfig` tools  are _non-persistent_, in other words, this configuration is lost after reboot. To make it persistent, network interface configuration files, NIC, need to be used whose path and format depends on distro
 * RedHat: /etc/sysconfig/network
 * Debian: /etc/network/interfaces
 * SUSE: /etc/sysconfig/network
 
 #### Network Manager
-`Network Manager` is a `systemd` service that manages network configurations. It generates the ultimate NIC file and by doing so it saves manual editing of NIC files. It is also used to list wireless networks in range, enter network passwords, turn devices on/off etc. It comes in several client interfaces.
+`Network Manager` is a `systemd` service that manages network configurations which change across distributions. It generates the ultimate NIC file and saves manual editing of NIC files. It is also used to list wireless networks in range, enter network passwords, turn devices on/off etc. It comes in several client interfaces.
 
-* GUI offered by Desktop Environment. 
-* nmtui: text user interface (on terminal) for network manager.
-* nmcli: CLI for network manager.
+* GUI offered by Desktop Environment, e.g. gnome-network-manager 
+* `nmtui`: text user interface (on terminal) for network manager.
+* `nmcli`: CLI for network manager.
 
-nmtui and nmcli are distro independent and abstract differences in NICs.
+`nmtui` and `nmcli` are distro-independent and abstract differences in NICs. Any changes are permanent!
 
 ```nmcli device wifi list                                   # list wifi networks in range```  
 ```nmcli device wifi connect <ssid>                         # connect to network```  
 ```nmcli connection show                                    # list connection profiles```  
-```nmcli connection show <ssid>                             # show details of ssid```  
-```nmcli con modify <ssid> +ipv4.addreses 192.168.1.10      # configure static IP```
+```nmcli connection show <name>                             # show details of connection with name```  
+
+Add a new permanent address to existing connection and acticate it. The same network interface will have now 2 addresses.
+
+`nmcli con modify <name> +ipv4.addreses 192.168.1.10`
+`nmcli con up <name>`
+
+Add a new permanent route.
+
+`nmcli con modify karakays +ipv4.routes 2.2.0.0/16`
+
 
 #### Routing
-For every TCP/IP packet being transmitted, network interfaces, sometimes, cannot transmit packets directly to the destination and need to forward to intermediate routers. A routing table is here to help find the next stop of a packet. This is done by comparing routing entries in the table with the final destination address of the packet. Packet is forwarded to the gateway address of the routing entry found, Some routing entries might not have a gateway which is indicated with the absence of `G` flag. To see current routing table
+For every TCP/IP packet being transmitted, sometimes network interfaces cannot transmit packets directly to the destination and need to forward to intermediate routers. Kernel's routing table is here to help find the next stop of a packet. This is done by comparing routing entries in the table with the final destination address of the packet. Packet is forwarded to the gateway address of the routing entry found, Some routing entries might not have a gateway which is indicated with the absence of `G` flag. To see current routing table
 
 ```$ ip route show```
 
@@ -1685,21 +1704,22 @@ A typical routing entry contains
 
 Column  | Desc
 ---     | ---
-destination | destination network address
-gateway | address of the router to forward datagram to
-genmask | destination network mask
+destination | target network or host address
+gateway | Route packets via gateway. Indicated with `G` flag.
+genmask | destination network mask. must be set if target is network address.
 iface   | network device to send datagram through 
 flag    | e.g. U for up, G for network has gateway
 metric  | priority in case multiple matches are found
 
-##### Default route
-Fallback route chosen in case destination address doesn't match any entry in the routing table. 
-It can be obtained dynamically using DHCP or configured manually via `nmcli` or editing NIC. To set it in the NIC file, `gateway` keywork is used in the configuration.
+##### Default and static routes
+Default route chosen in case destination address doesn't match any entry in the routing table. It has `0.0.0.0` in the desintation. 
+It can be obtained dynamically using DHCP or configured manually via `nmcli` or editing NIC. To set it in the NIC file, `gateway` keywork is used in the configuration. Static routing entries can be added to the table via `ip` command. By default, local network address is setup as a static route so that peer to peer requests can be made in the LAN without involving the default gateway.
 
-##### Static routes
-Static routing entries can be added to the table via `ip` command. By default, local network address is setup as a static route so that peer to peer requests can be made in the LAN without involving the default gateway.
+To add a route for target network -n <nw-ip>,
 
-```sudo ip route add <args>```
+`route add -n <nw-ip> netmask <mask> metric 10 dev eth0`
+
+`route` command doesn't make persistent changes. One must edit `NIC` file to persist route entries.
 
 #### DNS
 
