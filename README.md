@@ -165,7 +165,7 @@ Only root can decrease niceness.
 
 2. shared: Such libraries can be loaded into application at runtime - also called dynamic link libraries (DLL). I think it can be thought as an external dependency that is satisfied from the environment and not during application build time. Shared libraries have `*.so` extension.
 
-To find shared libraries of a program requires,
+To find shared libraries of a program depends
 
 `ldd /usr/bin/vim`
 
@@ -215,78 +215,117 @@ Kill all `cat` processes by user tom with a signal 15
 ### V. Package managers
 In general, two families of package managers can be considered.
 
-1. rpm... RedHat Package Manager
-2. dpkg... Debian Package Manager
+1. `rpm`: RedHat Package Manager
+2. `dpkg`: Debian Package Manager
 
 Packaging systems can be classified in two levels:
-1. low-level: Low-level PMs deal with installation/removal only. They don't carry out dependency management. If a package is missing a dependency during installation, it will fail. Similarly, if a removal depends on some other package, it will also fail. 
-* rpm in RedHat family
-* dpkg in Debian family
+1. Low-level PMs deal with installation/removal only. They don't carry out dependency management. If a package is missing a dependency during installation, it will fail. Similarly, if a removal depends on some other package, it will also fail. 
+    * rpm in RedHat family
+    * dpkg in Debian family
 
-2. high-level: High-level PMs are based on the low-level PMs. They handle dependency management, automatic dependency resolving and accesses external software repositories i.e. downloading/installing/removing of dependencies when needed.
-* yum (RHEL, CentOS), dnf (Fedora) and zypper (SUSE) in RedHat family
-* apt suite in Debian family
-
+2. High-level PMs are based on the low-level ones. They handle dependency management, automatic dependency resolving and accesses external software repositories i.e. downloading/installing/removing of dependencies when needed.
+    * `yum` (RHEL, CentOS), `dnf` (Fedora) and `zypper` (SUSE) in RedHat family
+    * `apt` suite in Debian family
 
 ### VII. dpkg
 
-dpkg database is located at /var/lib/dpkg/
-dpkg is not aware of any repository. It knows, however, what is installed in the local system from dpkg database.
+`dpkg` database is located at `/var/lib/dpkg/`. `dpkg` is not aware of any central repository. However, it keeps track what's been installed through `apt` or manual installations. Remember `apt` is based on `dpkg`.
 
-##### Package namings:
+#### Package namings:
 
 Binary package name:
-<name>\_<version>-<revision>\_<architecture>.deb
-e.g. logrotate\_3.7.8-1-\_amd64.deb
-64 bit architecture called amd64.
+`<name>_<version>-<revision>_<architecture>.deb`, e.g. `logrotate_3.7.8-1-_amd64.deb`
+    * x86, 64 bit architecture is called `amd64`.
 
-Src package consists of:
+Src package consists of
+
 * upstream src package \*.tar.gz (from package maintainer)
 * metadata file \*.dsc describing the package
 * second src package that contains patches to the upstream source \*.debian.tar.gz
 
 ##### Features
 
-```bash
-$ dpkg -l         # List installed packages
-$ dpkg -c pkg.deb # List contents of \*.deb package
-$ dpkg -L package # List files installed from a package
-$ dpkg -S file    # Search what package installed <file> (bin, conf etc.)
-$ dpkg -s package # Query status of an installed package
-$ dpkg -I pkg.deb # Show info about \*.deb binary package 
-```
+To search what package installed <file> (bin, conf etc.)
 
-```bash
-$ dpkg -i pkg.deb ... # Install/update pkg.deb
-$ dpkg -r pkg.deb ... # Remove/purge (-P)
 ```
+$ dpkg -S /usr/bin/dig
+dnsutils: /usr/bin/dig
+```
+List installed packages
+
+`dpkg -l`
+
+List all files installed from a package
+
+`dpkg -L package`
+
+To query status of an installed package
+
+`dpkg -s package`
+
+List contents of deb package
+
+`dpkg -c package.deb `
+
+Install/update pkg.deb
+
+`dpkg -i pkg.deb
+
+Remove/purge (-P)
+
+`dpkg -r pkg.deb`
 
 ### X. APT
-APT software suite contains mainly apt-cache and apt-get which are based on dpkg.
+
+APT (Advanced Packaging Tool) software suite contains mainly `apt-cache`, `apt-get` and `apt-file` which are based on dpkg.
 
 ##### Features
 
 `apt-cache` queries packages from internal database (package index) at /var/lib/apt/lists.
 
+Full text search on name and desc on all package lists
 
-```bash
-$ apt-cache search term         # full text search on name and desc on all package lists
-$ apt-cache show/showpkg pkg    # show information on pkg - exact name search 
-$ apt-file search file          # search all packages that contains file
-$ apt-file list pkg             # list all files in the pkg. pkg doesn't need to be installed or fetched
-```
+`apt-cache search term`
 
-```bash
-$ sudo apt-get autoremove       # uninstall not needed dependencies
-$ sudo apt-get clean            # delete installed package archives from cache
-```
+Show information on pkg - exact name search 
 
-```bash
-$ sudo apt-get update       # sync package index lists with remote repos
-$ sudo apt-get install pkg  # install/update pkg
-$ sudo apt-get [--purge] remove pkg     # remove/purge pkg
-$ sudo apt-get upgrade                  # apply all available updates to all pkgs 
-```
+`apt-cache show/showpkg pkg`
+
+Show packages whose name starts with prefix
+
+`apt-cache pkgnames openjdk`
+
+Search all packages that contains file
+
+`apt-file search file`
+
+List all files in the pkg. pkg doesn't need to be installed or fetched
+
+`apt-file list pkg`
+
+Uninstall not needed dependencies
+
+`apt-get autoremove`
+
+Delete installed package archives from cache
+
+`apt-get clean`
+
+Sync package index lists with remote repos
+
+`apt-get update`
+
+Install/update pkg
+
+`apt-get install pkg`
+
+Remove/purge pkg
+
+`apt-get [--purge] remove pkg`
+
+Apply all available updates to all pkgs
+
+`apt-get upgrade`
 
 ### XI. System Monitoring
 
@@ -1323,10 +1362,10 @@ EXPOSE 6379
 ENTRYPOINT  ["app.sh"]
 ```
 
-Create a running container from an image
+Run a container from an image
 ```
-docker build -t my-image .
-# create container from image
+docker build -t my-image <path>
+# start a container from Dockerfile in <path>
 # -d to detach (let container run in bg)
 # -p to publish port to the hostj
 docker run -d -p 8888:6379 <my-image>
