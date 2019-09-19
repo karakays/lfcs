@@ -1336,9 +1336,8 @@ base image, bins, libs and application code are contained altogether in the dock
 ##### Docker image file
 
 You can create a Docker image in two ways
-* manually from an existing container
-* `Dockerfile`
-
+* `docker run -it <base-image>   # manually interactive shell into base image`
+* `docker run <image>            # build an image from Dockerfile`
 ```
 # create container from image `ubuntu`
 # checks local repository for image named `ubuntu` if not exists
